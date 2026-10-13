@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum VerificationStatus {
+  PENDING
+  PROCESSING
+  VERIFIED
+  REJECTED
+  ERROR
+}
+
+model User {
+  id            String                 @id @default(cuid())
+  email         String                 @unique
+  password      String
+  fullName      String?
+  role          String                 @default("USER")
+  verifications IdentityVerification[]
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+}
+
+model IdentityVerification {
+  id                String             @id @default(cuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  documentType      String             @default("CCCD")
+  documentNumber    String?
+  fullNameOnDoc     String?
+
+  frontImagePath    String
+  backImagePath     String?
+  selfiePath        String?
+
+  status            VerificationStatus @default(PENDING)
+
+  ocrResult         Json?
+  documentQuality   Json?
+  faceMatchResult   Json?
+  livenessResult    Json?
+  aiRawResult       Json?
+
+  qr                VerificationQr?
+
+  rejectionReason   String?
+
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([documentNumber])
+  @@index([status])
+}
+
+model VerificationQr {
+  id                 String               @id @default(cuid())
+  verificationId     String               @unique
+  verification       IdentityVerification @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+
+  found              Boolean              @default(false)
+  reader             String?
+  side               String?
+  payload            String?
+
+  documentNumber     String?
+  legacyId           String?
+  fullName           String?
+  dob                String?
+  gender             String?
+  nativePlace        String?
+  issueDate          String?
+
+  consistencyStatus  String?
+  consistencyScore   Float?
+  matchedFields      String[]
+  mismatchedFields   String[]
+
+  raw                Json?
+
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@index([documentNumber])
+  @@index([consistencyStatus])
+}
