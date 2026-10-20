@@ -1,0 +1,13 @@
+# Runtime deps cho image deploy (không có dep train, không CUDA/GPU).
+# requirements.txt gốc giữ cho môi trường train (torch có CUDA).
+fastapi==0.128.0
+uvicorn[standard]==0.40.0
+python-multipart==0.0.12
+numpy==2.3.5
+opencv-python-headless==4.10.0.84
+pillow==12.3.0
+onnxruntime==1.24.3
+rapidocr-onnxruntime==1.4.4
+mediapipe==1.0.1
+# torch CPU-only được cài riêng trong Dockerfile (index-url download.pytorch.org/whl/cpu).
+# PaddleOCR (fallback OCR) bị bỏ để tiết kiệm ~1GB + thời gian build; RapidOCR là engine chính.

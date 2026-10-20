@@ -1,0 +1,24 @@
+# Giữ build context nhỏ -> build nhanh hơn.
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Dev / train không cần trong image deploy
+tests/
+training/
+*.md
+README-hf.md
+
+# requirements gốc (có CUDA torch + training deps) không dùng trong image
+requirements.txt
+
+# File tạm
+*.log
+.DS_Store
+.env
+.env.*
