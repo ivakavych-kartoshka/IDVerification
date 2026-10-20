@@ -59,7 +59,11 @@ EXPOSE 7860
 
 # Healthcheck dựa trên endpoint /healthz sẵn có của service.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
-    CMD curl -fsS http://127.0.0.1:7860/healthz || exit 1
+    CMD curl -fsS "http://127.0.0.1:${PORT}/healthz" || exit 1
 
-# 1 worker để không nhân đôi RAM model. HF proxy cần bind 0.0.0.0:7860.
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860", "--workers", "1"]
+# PORT linh hoạt: HF dùng 7860 (đọc từ README YAML), Railway tự inject $PORT.
+# Mặc định 7860 khi không có biến PORT (chạy local / HF).
+ENV PORT=7860
+
+# 1 worker để không nhân đôi RAM model. Bind 0.0.0.0 để proxy (HF/Railway) tới được.
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --workers 1"]
