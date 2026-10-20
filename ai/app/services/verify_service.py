@@ -7,6 +7,7 @@ from app.services.face_service import FaceService
 from app.services.liveness_service import LivenessService
 from app.services.active_liveness_service import ActiveLivenessService
 from app.services.qr_service import QRService
+from app.services.tamper_service import TamperService
 
 
 class VerifyService:
@@ -16,6 +17,8 @@ class VerifyService:
         self.liveness = LivenessService()
         self.active = ActiveLivenessService()
         self.qr = QRService()
+        self.tamper = TamperService()
+        self.tamper_enabled = self._env_flag("AI_TAMPER_ENABLED", True)
         self.qr_enabled = self._env_flag("AI_QR_ENABLED", True)
         self.qr_require = self._env_flag("AI_QR_REQUIRE", False)
         self.qr_strict = self._env_flag("AI_QR_STRICT", True)
@@ -113,9 +116,22 @@ class VerifyService:
 
         active_ok = active_liveness.get("status") == "PASS"
         qr_reject, qr_reason = self._evaluate_qr(qr_fields, qr_consistency)
+        tamper = (
+            self.tamper.analyze(front_arr)
+            if (self.tamper_enabled and front_arr is not None)
+            else {"enabled": False, "status": "DISABLED", "tamper_score": 0.0, "regions": []}
+        )
+        tamper_reject = tamper.get("status") == "TAMPERED"
 
         status = "PROCESSING"
-        if face_match.get("status") == "MATCH" and passive_liveness.get("is_live", True) and active_ok and not qr_reject and not multiple_faces:
+        if (
+            face_match.get("status") == "MATCH"
+            and passive_liveness.get("is_live", True)
+            and active_ok
+            and not qr_reject
+            and not tamper_reject
+            and not multiple_faces
+        ):
             status = "VERIFIED"
         elif (
             face_match.get("status") != "MATCH"
@@ -124,6 +140,7 @@ class VerifyService:
             or face.get("face_count_id", 0) == 0
             or face.get("face_count_selfie", 0) == 0
             or qr_reject
+            or tamper_reject
             or multiple_faces
         ):
             status = "REJECTED"
@@ -145,6 +162,8 @@ class VerifyService:
                 reasons.append(f"Multiple faces in selfie ({selfie_face_count})")
             if qr_reject and qr_reason:
                 reasons.append(qr_reason)
+            if tamper_reject:
+                reasons.append("Document tamper detected (suspected photo/content substitution)")
             rejection = "; ".join(reasons) or "Verification failed"
         elif status == "VERIFIED":
             rejection = None
@@ -154,6 +173,7 @@ class VerifyService:
             "ocr": {"front": ocr_front, "back": ocr_back},
             "qr": {"front": qr_front, "back": qr_back, "fields": qr_fields, "enabled": self.qr_enabled},
             "qr_consistency": qr_consistency,
+            "tamper": tamper,
             "document_quality": doc_quality,
             "face": face,
             "face_match": face_match,

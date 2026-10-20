@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import health, ocr, qr, verify, liveness
+from app.routers import health, ocr, qr, verify, liveness, tamper
 
 app = FastAPI(title="AI eKYC Service", version="0.1.0")
 
@@ -18,6 +18,7 @@ app.include_router(ocr.router)
 app.include_router(qr.router)
 app.include_router(verify.router)
 app.include_router(liveness.router)
+app.include_router(tamper.router)
 
 
 @app.get("/")
