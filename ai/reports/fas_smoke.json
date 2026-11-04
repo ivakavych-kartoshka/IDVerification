@@ -1,0 +1,58 @@
+{
+  "tag": "smoke",
+  "real_dir": "data/fantasyid/prepared/train/bona_fide",
+  "attack_dir": "data/fantasyid/prepared/train/forged",
+  "n_real": 54,
+  "n_attack": 60,
+  "n_no_face": 6,
+  "engine": "MiniFASNetV2 (real_prob)",
+  "at_threshold": {
+    "threshold": 0.5,
+    "apcer": 0.4833,
+    "bpcer": 0.5926,
+    "acer": 0.538
+  },
+  "eer": {
+    "eer": 0.5352,
+    "threshold": 0.3557
+  },
+  "operating_points": {
+    "bpcer_5pct": {
+      "threshold": 0.001,
+      "apcer": 0.95,
+      "bpcer": 0.0556,
+      "acer": 0.5028
+    },
+    "bpcer_10pct": {
+      "threshold": 0.001,
+      "apcer": 0.9333,
+      "bpcer": 0.1111,
+      "acer": 0.5222
+    }
+  },
+  "per_attack": {
+    "attack": {
+      "n": 60,
+      "apcer": 0.4833,
+      "median_real_prob": 0.411
+    }
+  },
+  "latency_ms": {
+    "n": 114,
+    "median": 17.15,
+    "p95": 18.11
+  },
+  "scores": {
+    "real": {
+      "mean": 0.406,
+      "p10": 0.0015,
+      "median": 0.3004
+    },
+    "attack": {
+      "mean": 0.4726,
+      "p90": 0.9743,
+      "median": 0.411
+    }
+  },
+  "warning": "SMOKE - không dùng số liệu này để báo cáo"
+}

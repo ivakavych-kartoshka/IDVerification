@@ -1,0 +1,75 @@
+{
+  "data": "data/fantasyid/prepared/test",
+  "weights": "models/tamper_net.pth",
+  "engine": "torch",
+  "model_weight": 0.7,
+  "deployed_threshold": 0.55,
+  "n_images": 1385,
+  "n_forged": 1085,
+  "n_bona_fide": 300,
+  "auc": 0.3417,
+  "average_precision": 0.7429,
+  "per_threshold": {
+    "0.55": {
+      "threshold": 0.55,
+      "accuracy": 0.3509,
+      "precision": 0.671,
+      "recall": 0.3364,
+      "f1": 0.4481,
+      "fpr": 0.5967,
+      "fnr": 0.6636,
+      "tp": 365,
+      "fp": 179,
+      "tn": 121,
+      "fn": 720
+    },
+    "0.57": {
+      "threshold": 0.57,
+      "accuracy": 0.3379,
+      "precision": 0.6603,
+      "recall": 0.3189,
+      "f1": 0.4301,
+      "fpr": 0.5933,
+      "fnr": 0.6811,
+      "tp": 346,
+      "fp": 178,
+      "tn": 122,
+      "fn": 739
+    },
+    "0.675": {
+      "threshold": 0.675,
+      "accuracy": 0.2751,
+      "precision": 0.6278,
+      "recall": 0.1834,
+      "f1": 0.2839,
+      "fpr": 0.3933,
+      "fnr": 0.8166,
+      "tp": 199,
+      "fp": 118,
+      "tn": 182,
+      "fn": 886
+    }
+  },
+  "per_attack_type": {
+    "face": {
+      "n": 150,
+      "recall": 0.7933,
+      "precision_vs_bona": 1.0
+    },
+    "text": {
+      "n": 935,
+      "recall": 0.2631,
+      "precision_vs_bona": 1.0
+    }
+  },
+  "localization_iou": {
+    "n": 911,
+    "mean": 0.0,
+    "median": 0.0
+  },
+  "latency_ms": {
+    "median": 252.35,
+    "p95": 460.97
+  },
+  "model_only_auc": 0.319
+}

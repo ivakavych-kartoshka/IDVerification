@@ -41,6 +41,7 @@ Cấu hình qua **Settings → Variables and secrets** của Space. Các biến 
 | `AI_TAMPER_THRESHOLD` | `0.55` | Ngưỡng quyết định `TAMPERED` |
 | `AI_TAMPER_SUSPECT` | `0.35` | Ngưỡng `SUSPICIOUS` |
 | `AI_FAS_ENABLED` | `true` | Bật liveness passive (MiniFASNet) |
+| `AI_FAS_BLUR_GATE` | `25.0` | Ngưỡng blur gate trên crop mặt trước FAS (`0` = tắt); dưới ngưỡng trả `LOW_QUALITY`/`RETRY` |
 | `AI_QR_STRICT` | `true` | Reject khi số trên QR không khớp OCR |
 
 Xem đầy đủ trong `ai/README.md`.

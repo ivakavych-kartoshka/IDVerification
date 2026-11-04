@@ -49,3 +49,20 @@ def test_detect_face_boxes_runs():
         pytest.skip("detector model not available")
     result = svc.detect_face_boxes(np.zeros((240, 320, 3), dtype=np.uint8))
     assert isinstance(result, list)
+
+
+def test_aligned_embedding_falls_back_to_detected_box(monkeypatch):
+    """Khi landmark thất bại, fallback phải lặp qua box chứ không phải crop."""
+    svc = FaceService()
+    img = np.zeros((100, 100, 3), dtype=np.uint8)
+    monkeypatch.setattr(svc, "_tile_images", lambda _img: [img])
+    monkeypatch.setattr(svc, "landmarks5", lambda _img: None)
+    monkeypatch.setattr(svc, "detect_face_boxes", lambda _img: [(10, 10, 50, 50)])
+    monkeypatch.setattr(
+        svc, "embed", lambda _aligned: np.array([1.0, 0.0], dtype=np.float32)
+    )
+
+    emb = svc._aligned_embedding(img)
+
+    assert emb is not None
+    assert emb.shape == (2,)

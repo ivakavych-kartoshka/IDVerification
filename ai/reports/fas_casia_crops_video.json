@@ -1,0 +1,70 @@
+{
+  "scores_csv": "reports\\fas_casia_crops_scores.csv",
+  "manifest": "data\\fas_casia\\manifest.csv",
+  "n_no_face": 0,
+  "n_unmatched": 0,
+  "frame": {
+    "n_real": 674,
+    "n_attack": 1986,
+    "at_threshold": {
+      "threshold": 0.5,
+      "apcer": 0.0136,
+      "bpcer": 0.1231,
+      "acer": 0.0684
+    },
+    "eer": {
+      "eer": 0.0639,
+      "threshold": 0.176
+    },
+    "auc": 0.9874
+  },
+  "video": {
+    "n_real": 90,
+    "n_attack": 270,
+    "at_threshold": {
+      "threshold": 0.5,
+      "apcer": 0.0,
+      "bpcer": 0.1,
+      "acer": 0.05
+    },
+    "eer": {
+      "eer": 0.0333,
+      "threshold": 0.264
+    },
+    "auc": 0.9972,
+    "median_real_prob": {
+      "real": 0.9475,
+      "attack": 0.0039
+    }
+  },
+  "by_quality": {
+    "HR": {
+      "n_real": 30,
+      "n_attack": 90,
+      "at_threshold": {
+        "threshold": 0.5,
+        "apcer": 0.0,
+        "bpcer": 0.2333,
+        "acer": 0.1167
+      },
+      "eer": {
+        "eer": 0.0389,
+        "threshold": 0.179
+      }
+    },
+    "none": {
+      "n_real": 60,
+      "n_attack": 180,
+      "at_threshold": {
+        "threshold": 0.5,
+        "apcer": 0.0,
+        "bpcer": 0.0333,
+        "acer": 0.0167
+      },
+      "eer": {
+        "eer": 0.0167,
+        "threshold": 0.401
+      }
+    }
+  }
+}

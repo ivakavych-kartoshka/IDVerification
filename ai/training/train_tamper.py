@@ -20,7 +20,7 @@ dataset này thách thức (FNR ~50% ở FPR 10%).
 Ví dụ::
 
     cd ai
-    python training/train_tamper.py --data D:/datasets/fantasyid/FantasyID/train_val ^
+    python training/train_tamper.py --data data/fantasyid/prepared/train ^
         --epochs 40 --batch-size 16 --out models/tamper_net.pth
 
     # chỉ để kiểm tra pipeline chạy được:
@@ -238,8 +238,13 @@ def main() -> int:
         # checkpoint là OK, nhưng phải là cùng một tập).
         if os.path.exists(args.val_manifest):
             with open(args.val_manifest, "r", encoding="utf-8") as fh:
-                wanted = {ln.strip() for ln in fh if ln.strip()}
-            val_idx = [i for i, (p, _y, _m) in enumerate(dataset.samples) if p in wanted]
+                entries = [ln.strip() for ln in fh if ln.strip()]
+            # Hỗ trợ cả đường dẫn tuyệt đối lẫn tương đối so với --data
+            # (cùng quy ước với training/calibrate_tamper.py).
+            wanted = {os.path.normcase(os.path.abspath(e if os.path.isabs(e) else os.path.join(args.data, e)))
+                      for e in entries}
+            val_idx = [i for i, (p, _y, _m) in enumerate(dataset.samples)
+                       if os.path.normcase(os.path.abspath(p)) in wanted]
             train_idx = [i for i in range(len(dataset)) if i not in set(val_idx)]
             print(f"[split] đọc manifest {args.val_manifest}: val={len(val_idx)} train={len(train_idx)}")
         else:

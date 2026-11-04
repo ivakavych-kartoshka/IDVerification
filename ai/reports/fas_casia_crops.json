@@ -1,0 +1,59 @@
+{
+  "tag": "casia_fasd_crops",
+  "real_dir": "data\\fas_casia\\real",
+  "attack_dir": "data\\fas_casia\\attack",
+  "n_real": 674,
+  "n_attack": 1986,
+  "n_no_face": 0,
+  "no_detect": true,
+  "engine": "MiniFASNetV2 (real_prob)",
+  "at_threshold": {
+    "threshold": 0.5,
+    "apcer": 0.0136,
+    "bpcer": 0.1231,
+    "acer": 0.0684
+  },
+  "eer": {
+    "eer": 0.0639,
+    "threshold": 0.1757
+  },
+  "operating_points": {
+    "bpcer_5pct": {
+      "threshold": 0.122,
+      "apcer": 0.0856,
+      "bpcer": 0.0504,
+      "acer": 0.068
+    },
+    "bpcer_10pct": {
+      "threshold": 0.36,
+      "apcer": 0.0252,
+      "bpcer": 0.1009,
+      "acer": 0.063
+    }
+  },
+  "per_attack": {
+    "attack": {
+      "n": 1986,
+      "apcer": 0.0136,
+      "median_real_prob": 0.0011
+    }
+  },
+  "latency_ms": {
+    "n": 2660,
+    "median": 16.96,
+    "p95": 17.59
+  },
+  "scores": {
+    "real": {
+      "mean": 0.8383,
+      "p10": 0.3602,
+      "median": 0.9778
+    },
+    "attack": {
+      "mean": 0.0361,
+      "p90": 0.0978,
+      "median": 0.0011
+    }
+  },
+  "warning": ""
+}

@@ -1,0 +1,386 @@
+{
+  "manifest": "data/fas_casia/manifest.csv",
+  "real_dir": "data/fas_casia/real",
+  "attack_dir": "data/fas_casia/attack",
+  "engine": "MiniFASNetV2 (real_prob)",
+  "tta": false,
+  "threshold": 0.5,
+  "n_images": 2660,
+  "n_missing": 0,
+  "conditions": {
+    "clean": {
+      "frame": {
+        "n_real": 674,
+        "n_attack": 1986,
+        "at_threshold": {
+          "threshold": 0.5,
+          "apcer": 0.0141,
+          "bpcer": 0.1261,
+          "acer": 0.0701
+        },
+        "eer": {
+          "eer": 0.0669,
+          "threshold": 0.1421
+        },
+        "auc": 0.9787
+      },
+      "video": {
+        "n_real": 90,
+        "n_attack": 270,
+        "at_threshold": {
+          "threshold": 0.5,
+          "apcer": 0.0,
+          "bpcer": 0.0778,
+          "acer": 0.0389
+        },
+        "eer": {
+          "eer": 0.0222,
+          "threshold": 0.3032
+        },
+        "auc": 0.9981,
+        "median_real_prob": {
+          "real": 0.9702,
+          "attack": 0.0022
+        }
+      }
+    },
+    "jpeg_q70": {
+      "frame": {
+        "n_real": 674,
+        "n_attack": 1986,
+        "at_threshold": {
+          "threshold": 0.5,
+          "apcer": 0.0176,
+          "bpcer": 0.1365,
+          "acer": 0.0771
+        },
+        "eer": {
+          "eer": 0.0669,
+          "threshold": 0.1233
+        },
+        "auc": 0.979
+      },
+      "video": {
+        "n_real": 90,
+        "n_attack": 270,
+        "at_threshold": {
+          "threshold": 0.5,
+          "apcer": 0.0,
+          "bpcer": 0.1,
+          "acer": 0.05
+        },
+        "eer": {
+          "eer": 0.0333,
+          "threshold": 0.2372
+        },
+        "auc": 0.9977,
+        "median_real_prob": {
+          "real": 0.959,
+          "attack": 0.0022
+        }
+      }
+    },
+    "jpeg_q50": {
+      "frame": {
+        "n_real": 674,
+        "n_attack": 1986,
+        "at_threshold": {
+          "threshold": 0.5,
+          "apcer": 0.0186,
+          "bpcer": 0.1261,
+          "acer": 0.0724
+        },
+        "eer": {
+          "eer": 0.0711,
+          "threshold": 0.1261
+        },
+        "auc": 0.9807
+      },
+      "video": {
+        "n_real": 90,
+        "n_attack": 270,
+        "at_threshold": {
+          "threshold": 0.5,
+          "apcer": 0.0074,
+          "bpcer": 0.1111,
+          "acer": 0.0593
+        },
+        "eer": {
+          "eer": 0.0333,
+          "threshold": 0.2333
+        },
+        "auc": 0.9977,
+        "median_real_prob": {
+          "real": 0.9651,
+          "attack": 0.0022
+        }
+      }
+    },
+    "jpeg_q30": {
+      "frame": {
+        "n_real": 674,
+        "n_attack": 1986,
+        "at_threshold": {
+          "threshold": 0.5,
+          "apcer": 0.0176,
+          "bpcer": 0.1528,
+          "acer": 0.0852
+        },
+        "eer": {
+          "eer": 0.0771,
+          "threshold": 0.1314
+        },
+        "auc": 0.9755
+      },
+      "video": {
+        "n_real": 90,
+        "n_attack": 270,
+        "at_threshold": {
+          "threshold": 0.5,
+          "apcer": 0.0074,
+          "bpcer": 0.1111,
+          "acer": 0.0593
+        },
+        "eer": {
+          "eer": 0.0444,
+          "threshold": 0.195
+        },
+        "auc": 0.9968,
+        "median_real_prob": {
+          "real": 0.9228,
+          "attack": 0.0029
+        }
+      }
+    },
+    "blur_s1.5": {
+      "frame": {
+        "n_real": 674,
+        "n_attack": 1986,
+        "at_threshold": {
+          "threshold": 0.5,
+          "apcer": 0.006,
+          "bpcer": 0.2774,
+          "acer": 0.1417
+        },
+        "eer": {
+          "eer": 0.1068,
+          "threshold": 0.0351
+        },
+        "auc": 0.9584
+      },
+      "video": {
+        "n_real": 90,
+        "n_attack": 270,
+        "at_threshold": {
+          "threshold": 0.5,
+          "apcer": 0.0,
+          "bpcer": 0.2333,
+          "acer": 0.1167
+        },
+        "eer": {
+          "eer": 0.0778,
+          "threshold": 0.0835
+        },
+        "auc": 0.978,
+        "median_real_prob": {
+          "real": 0.8448,
+          "attack": 0.0018
+        }
+      }
+    },
+    "blur_s3.0": {
+      "frame": {
+        "n_real": 674,
+        "n_attack": 1986,
+        "at_threshold": {
+          "threshold": 0.5,
+          "apcer": 0.0388,
+          "bpcer": 0.6706,
+          "acer": 0.3547
+        },
+        "eer": {
+          "eer": 0.2582,
+          "threshold": 0.0188
+        },
+        "auc": 0.8165
+      },
+      "video": {
+        "n_real": 90,
+        "n_attack": 270,
+        "at_threshold": {
+          "threshold": 0.5,
+          "apcer": 0.037,
+          "bpcer": 0.6222,
+          "acer": 0.3296
+        },
+        "eer": {
+          "eer": 0.2889,
+          "threshold": 0.0344
+        },
+        "auc": 0.8271,
+        "median_real_prob": {
+          "real": 0.2675,
+          "attack": 0.0054
+        }
+      }
+    },
+    "down_128": {
+      "frame": {
+        "n_real": 674,
+        "n_attack": 1986,
+        "at_threshold": {
+          "threshold": 0.5,
+          "apcer": 0.007,
+          "bpcer": 0.1869,
+          "acer": 0.097
+        },
+        "eer": {
+          "eer": 0.0906,
+          "threshold": 0.0552
+        },
+        "auc": 0.9715
+      },
+      "video": {
+        "n_real": 90,
+        "n_attack": 270,
+        "at_threshold": {
+          "threshold": 0.5,
+          "apcer": 0.0,
+          "bpcer": 0.1333,
+          "acer": 0.0667
+        },
+        "eer": {
+          "eer": 0.0648,
+          "threshold": 0.1224
+        },
+        "auc": 0.99,
+        "median_real_prob": {
+          "real": 0.9218,
+          "attack": 0.0018
+        }
+      }
+    },
+    "down_64": {
+      "frame": {
+        "n_real": 674,
+        "n_attack": 1986,
+        "at_threshold": {
+          "threshold": 0.5,
+          "apcer": 0.0081,
+          "bpcer": 0.4154,
+          "acer": 0.2117
+        },
+        "eer": {
+          "eer": 0.135,
+          "threshold": 0.0293
+        },
+        "auc": 0.9333
+      },
+      "video": {
+        "n_real": 90,
+        "n_attack": 270,
+        "at_threshold": {
+          "threshold": 0.5,
+          "apcer": 0.0037,
+          "bpcer": 0.3556,
+          "acer": 0.1796
+        },
+        "eer": {
+          "eer": 0.1222,
+          "threshold": 0.0663
+        },
+        "auc": 0.9478,
+        "median_real_prob": {
+          "real": 0.6958,
+          "attack": 0.0027
+        }
+      }
+    },
+    "dark_0.5": {
+      "frame": {
+        "n_real": 674,
+        "n_attack": 1986,
+        "at_threshold": {
+          "threshold": 0.5,
+          "apcer": 0.0232,
+          "bpcer": 0.1128,
+          "acer": 0.068
+        },
+        "eer": {
+          "eer": 0.0681,
+          "threshold": 0.1827
+        },
+        "auc": 0.9778
+      },
+      "video": {
+        "n_real": 90,
+        "n_attack": 270,
+        "at_threshold": {
+          "threshold": 0.5,
+          "apcer": 0.0074,
+          "bpcer": 0.0778,
+          "acer": 0.0426
+        },
+        "eer": {
+          "eer": 0.0241,
+          "threshold": 0.277
+        },
+        "auc": 0.9976,
+        "median_real_prob": {
+          "real": 0.9618,
+          "attack": 0.0073
+        }
+      }
+    }
+  },
+  "deltas_vs_clean": {
+    "jpeg_q70": {
+      "apcer": 0.0,
+      "bpcer": 0.0222,
+      "eer": 0.0111,
+      "auc": -0.0004
+    },
+    "jpeg_q50": {
+      "apcer": 0.0074,
+      "bpcer": 0.0333,
+      "eer": 0.0111,
+      "auc": -0.0004
+    },
+    "jpeg_q30": {
+      "apcer": 0.0074,
+      "bpcer": 0.0333,
+      "eer": 0.0222,
+      "auc": -0.0013
+    },
+    "blur_s1.5": {
+      "apcer": 0.0,
+      "bpcer": 0.1555,
+      "eer": 0.0556,
+      "auc": -0.0201
+    },
+    "blur_s3.0": {
+      "apcer": 0.037,
+      "bpcer": 0.5444,
+      "eer": 0.2667,
+      "auc": -0.171
+    },
+    "down_128": {
+      "apcer": 0.0,
+      "bpcer": 0.0555,
+      "eer": 0.0426,
+      "auc": -0.0081
+    },
+    "down_64": {
+      "apcer": 0.0037,
+      "bpcer": 0.2778,
+      "eer": 0.1,
+      "auc": -0.0503
+    },
+    "dark_0.5": {
+      "apcer": 0.0074,
+      "bpcer": 0.0,
+      "eer": 0.0019,
+      "auc": -0.0005
+    }
+  }
+}

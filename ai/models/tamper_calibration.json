@@ -1,0 +1,167 @@
+{
+  "data": "data/fantasyid/prepared/train",
+  "weights": "models/tamper_net.pth",
+  "model_weight": 0.7,
+  "n_images": 284,
+  "n_forged": 168,
+  "n_bona_fide": 116,
+  "engine": "torch",
+  "recommended": {
+    "AI_TAMPER_THRESHOLD": 0.57,
+    "AI_TAMPER_SUSPECT": 0.42,
+    "best_f1": 0.8113,
+    "precision": 0.7701,
+    "recall": 0.8571
+  },
+  "operating_point_fpr10": {
+    "threshold": 0.675,
+    "f1": 0.7852,
+    "precision": 0.9,
+    "recall": 0.6964,
+    "fnr": 0.3036
+  },
+  "signal_separation": {
+    "boundary_energy": 0.0,
+    "noise_step": 0.0014,
+    "blockiness": 0.4732,
+    "low_hf_fraction": 0.0
+  },
+  "per_attack_type": {
+    "face_text": {
+      "n": 168,
+      "f1": 0.9231,
+      "precision": 1.0,
+      "recall": 0.8571
+    }
+  },
+  "signal_norm_percentiles": {
+    "boundary_energy": {
+      "bona_fide": {
+        "n": 104,
+        "median": 0.0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "forged": {
+        "n": 167,
+        "median": 0.0,
+        "p10": 0.0,
+        "p90": 0.0
+      }
+    },
+    "noise_step": {
+      "bona_fide": {
+        "n": 104,
+        "median": 0.0674,
+        "p10": 0.017,
+        "p90": 0.1647
+      },
+      "forged": {
+        "n": 167,
+        "median": 0.066,
+        "p10": 0.0141,
+        "p90": 0.171
+      }
+    },
+    "blockiness": {
+      "bona_fide": {
+        "n": 116,
+        "median": 0.0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "forged": {
+        "n": 168,
+        "median": 0.4732,
+        "p10": 0.1512,
+        "p90": 1.0
+      }
+    },
+    "low_hf_fraction": {
+      "bona_fide": {
+        "n": 116,
+        "median": 0.0,
+        "p10": 0.0,
+        "p90": 0.0
+      },
+      "forged": {
+        "n": 168,
+        "median": 0.0,
+        "p10": 0.0,
+        "p90": 0.0
+      }
+    }
+  },
+  "signal_raw_percentiles": {
+    "boundary_energy": {
+      "bona_fide": {
+        "n": 104,
+        "median": 0.7178,
+        "p10": 0.5196,
+        "p90": 0.965
+      },
+      "forged": {
+        "n": 167,
+        "median": 0.6489,
+        "p10": 0.4345,
+        "p90": 0.8261
+      }
+    },
+    "noise_step": {
+      "bona_fide": {
+        "n": 104,
+        "median": 0.0809,
+        "p10": 0.0205,
+        "p90": 0.1976
+      },
+      "forged": {
+        "n": 167,
+        "median": 0.0792,
+        "p10": 0.0169,
+        "p90": 0.2051
+      }
+    },
+    "blockiness": {
+      "bona_fide": {
+        "n": 116,
+        "median": 0.0594,
+        "p10": 0.0256,
+        "p90": 0.1482
+      },
+      "forged": {
+        "n": 168,
+        "median": 0.3156,
+        "p10": 0.2029,
+        "p90": 0.6178
+      }
+    },
+    "low_hf_fraction": {
+      "bona_fide": {
+        "n": 116,
+        "median": 0.006,
+        "p10": 0.0,
+        "p90": 0.0548
+      },
+      "forged": {
+        "n": 168,
+        "median": 0.0087,
+        "p10": 0.0006,
+        "p90": 0.055
+      }
+    }
+  },
+  "module_constants": {
+    "SIGNAL_WEIGHTS": {
+      "boundary_energy": 0.35,
+      "noise_step": 0.25,
+      "blockiness": 0.15,
+      "low_hf_fraction": 0.25
+    },
+    "SIGNAL_NORM": {
+      "boundary_energy": "xem tamper_service.SIGNAL_NORM",
+      "noise_step": "xem tamper_service.SIGNAL_NORM",
+      "blockiness": "xem tamper_service.SIGNAL_NORM",
+      "low_hf_fraction": "xem tamper_service.SIGNAL_NORM"
+    }
+  }
+}

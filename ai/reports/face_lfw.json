@@ -1,0 +1,151 @@
+{
+  "dataset": {
+    "name": "LFW View 1 (deep-funneled)",
+    "root": "data\\lfw-deepfunneled\\lfw-deepfunneled",
+    "pairs_dir": "data",
+    "n_unique_images_used": 4992,
+    "n_no_face_images": 2,
+    "cache_hits": 1408
+  },
+  "protocol": {
+    "val": [
+      "matchpairsDevTrain.csv",
+      "mismatchpairsDevTrain.csv"
+    ],
+    "test": [
+      "matchpairsDevTest.csv",
+      "mismatchpairsDevTest.csv"
+    ],
+    "threshold_policy": "Chọn ngưỡng EER trên DevTrain, chỉ chấm DevTest một lần; ngưỡng production được báo cáo riêng.",
+    "no_face_policy": "Cặp có ít nhất một ảnh không detect được mặt nhận score 0.0 và được tính vào FAR/FRR chính; báo cáo detected_only để tách riêng chất lượng nhận dạng.",
+    "match_threshold": 0.3,
+    "limit_per_class": 0
+  },
+  "splits": {
+    "val": {
+      "n_pairs": 2200,
+      "n_genuine": 1100,
+      "n_impostor": 1100,
+      "n_no_face_pairs": 3,
+      "coverage": 0.9986,
+      "at_threshold": {
+        "threshold": 0.3,
+        "far": 0.0,
+        "frr": 0.0282,
+        "tar": 0.9718,
+        "accuracy": 0.9859
+      },
+      "eer": {
+        "eer": 0.0145,
+        "threshold": 0.1615
+      },
+      "auc": 0.9933,
+      "detected_only": {
+        "n_pairs": 2197,
+        "n_genuine": 1098,
+        "n_impostor": 1099,
+        "at_threshold": {
+          "threshold": 0.3,
+          "far": 0.0,
+          "frr": 0.0264,
+          "tar": 0.9736,
+          "accuracy": 0.9868
+        },
+        "eer": {
+          "eer": 0.0137,
+          "threshold": 0.1684
+        },
+        "auc": 0.9942
+      }
+    },
+    "test": {
+      "n_pairs": 1000,
+      "n_genuine": 500,
+      "n_impostor": 500,
+      "n_no_face_pairs": 0,
+      "coverage": 1.0,
+      "at_threshold": {
+        "threshold": 0.3,
+        "far": 0.0,
+        "frr": 0.034,
+        "tar": 0.966,
+        "accuracy": 0.983
+      },
+      "eer": {
+        "eer": 0.02,
+        "threshold": 0.16
+      },
+      "auc": 0.9918,
+      "detected_only": {
+        "n_pairs": 1000,
+        "n_genuine": 500,
+        "n_impostor": 500,
+        "at_threshold": {
+          "threshold": 0.3,
+          "far": 0.0,
+          "frr": 0.034,
+          "tar": 0.966,
+          "accuracy": 0.983
+        },
+        "eer": {
+          "eer": 0.02,
+          "threshold": 0.16
+        },
+        "auc": 0.9918
+      }
+    }
+  },
+  "test_at_val_eer": {
+    "n_pairs": 1000,
+    "n_genuine": 500,
+    "n_impostor": 500,
+    "n_no_face_pairs": 0,
+    "coverage": 1.0,
+    "at_threshold": {
+      "threshold": 0.1615,
+      "far": 0.016,
+      "frr": 0.02,
+      "tar": 0.98,
+      "accuracy": 0.982
+    },
+    "eer": {
+      "eer": 0.02,
+      "threshold": 0.16
+    },
+    "auc": 0.9918,
+    "detected_only": {
+      "n_pairs": 1000,
+      "n_genuine": 500,
+      "n_impostor": 500,
+      "at_threshold": {
+        "threshold": 0.1615,
+        "far": 0.016,
+        "frr": 0.02,
+        "tar": 0.98,
+        "accuracy": 0.982
+      },
+      "eer": {
+        "eer": 0.02,
+        "threshold": 0.16
+      },
+      "auc": 0.9918
+    }
+  },
+  "tar_at_far": {
+    "far_0.01": {
+      "target_far": 0.01,
+      "val_threshold": 0.1797,
+      "val_far": 0.01,
+      "test_far": 0.016,
+      "test_tar": 0.98
+    },
+    "far_0.001": {
+      "target_far": 0.001,
+      "val_threshold": 0.2298,
+      "val_far": 0.0009,
+      "test_far": 0.004,
+      "test_tar": 0.976
+    }
+  },
+  "elapsed_sec": 105.14
+}

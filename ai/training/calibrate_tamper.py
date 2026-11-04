@@ -20,7 +20,9 @@ Ví dụ::
 
     cd ai
     python training/calibrate_tamper.py ^
-        --data D:/datasets/fantasyid/FantasyID/val ^
+        --data data/fantasyid/prepared/train ^
+        --val-manifest models/fantasyid_val.txt ^
+        --manifest-csv data/fantasyid/prepared/train/manifest.csv ^
         --weights models/tamper_net.pth
 
 Output: JSON ở ``--out`` (mặc định ``models/tamper_calibration.json``) để commit
@@ -29,9 +31,11 @@ vào repo làm hồ sơ cho ngưỡng đang dùng.
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import os
 import sys
+import time
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
@@ -41,6 +45,16 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.services import tamper_service as ts  # noqa: E402
 from app.services.tamper_service import SIGNAL_WEIGHTS, TamperService  # noqa: E402
 from training.train_tamper import CardTamperDataset  # noqa: E402
+
+
+def _norm_path(p: str) -> str:
+    """Chuẩn hoá đường dẫn để so sánh manifest với đường sinh bởi CardTamperDataset.
+
+    Dataset nối ``os.path.join(root, ...)``, nên ``--data`` dùng ``/`` hay ``\\``
+    đều sinh chuỗi trộn đường dẫn (``D:/data/...\\bona_fide\\x.jpg``). Manifest
+    lưu đường dẫn Windows chuẩn -> phải normcase + abspath cả hai bên mới khớp.
+    """
+    return os.path.normcase(os.path.abspath(p))
 
 
 def _f1_at(scores: np.ndarray, labels: np.ndarray, thr: float) -> Tuple[float, float, float]:
@@ -81,6 +95,7 @@ def main() -> int:
     ap.add_argument("--max-images", type=int, default=0, help="0 = dùng hết")
     ap.add_argument("--val-manifest", default="", help="chỉ chấm các ảnh trong file này (đúng split val lúc train)")
     ap.add_argument("--manifest-csv", default="", help="manifest.csv của prepare_fantasyid (stem,label,attack_type) để báo cáo theo loại tấn công")
+    ap.add_argument("--scores-csv", default="", help="ghi điểm từng ảnh (để ablation ngưỡng/trọng số không phải chạy lại inference)")
     args = ap.parse_args()
 
     if os.path.exists(args.weights):
@@ -90,11 +105,23 @@ def main() -> int:
     os.environ["AI_TAMPER_MODEL_WEIGHT"] = str(args.model_weight)
 
     dataset = CardTamperDataset(args.data, train=False)
-    if args.val_manifest and os.path.exists(args.val_manifest):
-        with open(args.val_manifest, "r", encoding="utf-8") as fh:
-            wanted = {ln.strip() for ln in fh if ln.strip()}
-        dataset.samples = [s for s in dataset.samples if s[0] in wanted]
-        print(f"[split] lọc theo {args.val_manifest}: {len(dataset.samples)} ảnh val")
+    if args.val_manifest:
+        if not os.path.exists(args.val_manifest):
+            print(f"[!] Không thấy val manifest {args.val_manifest} -> dùng toàn bộ split.")
+        else:
+            with open(args.val_manifest, "r", encoding="utf-8-sig") as fh:
+                entries = [ln.strip() for ln in fh if ln.strip()]
+            # Manifest hỗ trợ cả đường dẫn tuyệt đối lẫn tương đối (nối với --data)
+            # -> không phụ thuộc nơi đặt dataset, di chuyển máy không hỏng.
+            wanted = {_norm_path(e if os.path.isabs(e) else os.path.join(args.data, e))
+                      for e in entries}
+            dataset.samples = [s for s in dataset.samples if _norm_path(s[0]) in wanted]
+            print(f"[split] lọc theo {args.val_manifest}: {len(dataset.samples)} ảnh val "
+                  f"(trên {len(wanted)} đường dẫn trong manifest)")
+            if not dataset.samples:
+                print("[!] Manifest không khớp ảnh nào — kiểm tra --data và nội dung")
+                print("    manifest (đường dẫn tương đối được nối với --data).")
+                return 2
 
     attack_of: Dict[str, str] = {}
     if args.manifest_csv and os.path.exists(args.manifest_csv):
@@ -110,6 +137,7 @@ def main() -> int:
     labels: List[int] = []
     prob_scores: List[float] = []
     attack_types: List[str] = []
+    rows: List[tuple] = []
     signals: Dict[str, Dict[str, List[float]]] = {k: {"bona": [], "forged": []} for k in SIGNAL_WEIGHTS}
     raw: Dict[str, Dict[str, List[float]]] = {k: {"bona": [], "forged": []} for k in SIGNAL_WEIGHTS}
 
@@ -122,11 +150,18 @@ def main() -> int:
         if img is None:
             continue
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        t0 = time.perf_counter()
         res = svc.analyze(img)
+        ms = (time.perf_counter() - t0) * 1000.0
         scores.append(float(res["tamper_score"]))
         labels.append(int(label))
         stem = os.path.splitext(os.path.basename(path))[0]
-        attack_types.append(attack_of.get(stem, "unknown") if label == 1 else "bonafide")
+        atk = attack_of.get(stem, "unknown") if label == 1 else "bonafide"
+        attack_types.append(atk)
+        rows.append((path, stem, int(label), atk, float(res["tamper_score"]),
+                     None if res.get("model_prob") is None else float(res["model_prob"]),
+                     None if res["signals"] is None else float(res["signals"]["signal_score"]),
+                     round(ms, 2)))
         if res["model_prob"] is not None:
             prob_scores.append(float(res["model_prob"]))
         key = "forged" if label == 1 else "bona"
@@ -142,7 +177,19 @@ def main() -> int:
 
     s = np.asarray(scores, dtype=np.float64)
     y = np.asarray(labels, dtype=np.int32)
+    if s.size == 0:
+        print("\n[!] Không chấm được ảnh nào -> kết luận calibration vô nghĩa, tạm dừng.")
+        return 2
     print(f"\nĐã chấm {len(s)} ảnh ({int((y == 1).sum())} forged / {int((y == 0).sum())} bona fide)")
+
+    if args.scores_csv:
+        os.makedirs(os.path.dirname(os.path.abspath(args.scores_csv)), exist_ok=True)
+        with open(args.scores_csv, "w", encoding="utf-8", newline="") as fh:
+            wr = csv.writer(fh)
+            wr.writerow(["path", "stem", "label", "attack_type", "tamper_score",
+                         "model_prob", "signal_score", "ms"])
+            wr.writerows(rows)
+        print(f"Đã ghi {args.scores_csv} ({len(rows)} dòng)")
 
     # --- quét ngưỡng tối ưu F1 ---
     grid = np.linspace(0.05, 0.95, 91)

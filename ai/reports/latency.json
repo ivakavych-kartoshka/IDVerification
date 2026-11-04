@@ -1,0 +1,80 @@
+{
+  "data": "data/fantasyid/prepared/test",
+  "n_images": 200,
+  "n_with_face": 113,
+  "n_no_face": 87,
+  "n_embed": 110,
+  "n_ocr_ok": 200,
+  "components": {
+    "io": {
+      "n": 400,
+      "mean": 18.96,
+      "median": 12.85,
+      "p95": 51.43,
+      "max": 76.13
+    },
+    "detect": {
+      "n": 200,
+      "mean": 46.89,
+      "median": 33.01,
+      "p95": 133.55,
+      "max": 258.41
+    },
+    "landmark": {
+      "n": 200,
+      "mean": 17.99,
+      "median": 15.76,
+      "p95": 35.34,
+      "max": 73.29
+    },
+    "embed": {
+      "n": 110,
+      "mean": 22.95,
+      "median": 6.77,
+      "p95": 67.18,
+      "max": 130.25
+    },
+    "fas": {
+      "n": 113,
+      "mean": 175.19,
+      "median": 185.27,
+      "p95": 241.81,
+      "max": 352.81
+    },
+    "ocr": {
+      "n": 200,
+      "mean": 2069.5,
+      "median": 2329.84,
+      "p95": 3381.39,
+      "max": 4329.14
+    }
+  },
+  "qr": {
+    "n": 20,
+    "mean": 55.12,
+    "median": 56.52,
+    "p95": 63.09,
+    "max": 64.25,
+    "n_repeats": 20,
+    "fixture": "tests/fixtures/cccd_back_qr.png"
+  },
+  "tamper_ref": {
+    "n": 1385,
+    "mean": 269.95,
+    "median": 252.35,
+    "p95": 460.97,
+    "max": 2263.03,
+    "source": "reports/tamper_test_scores.csv"
+  },
+  "estimated_sequential_total_ms": 2892.4,
+  "estimated_sequential_breakdown": {
+    "io": 12.85,
+    "detect": 33.01,
+    "landmark": 15.76,
+    "embed": 6.77,
+    "fas": 185.27,
+    "ocr": 2329.84,
+    "qr": 56.52,
+    "tamper": 252.35
+  }
+}

@@ -59,6 +59,47 @@ class VerifyService:
         except Exception:
             return 0.0
 
+    @staticmethod
+    def _decide_status(
+        face_match_status: str,
+        passive_liveness: Dict[str, Any],
+        active_ok: bool,
+        qr_reject: bool,
+        tamper_reject: bool,
+        face_count_id: int,
+        face_count_selfie: int,
+        multiple_faces: bool,
+    ) -> str:
+        """Resolve the top-level verdict.
+
+        A low-quality selfie (``LOW_QUALITY``) returns ``RETRY`` rather than a
+        spoof rejection, provided there is no independent document/security
+        failure. Face-match and active-liveness failures are not hard blockers
+        in that case because blur makes both unreliable. Document problems
+        (missing ID portrait, QR mismatch, tamper, multiple faces) still reject.
+        """
+        if (
+            face_match_status == "MATCH"
+            and passive_liveness.get("is_live", True)
+            and active_ok
+            and not qr_reject
+            and not tamper_reject
+            and not multiple_faces
+            and face_count_id > 0
+            and face_count_selfie > 0
+        ):
+            return "VERIFIED"
+
+        document_or_security_fail = (
+            qr_reject or tamper_reject or multiple_faces or face_count_id == 0
+        )
+        if (
+            passive_liveness.get("status") == "LOW_QUALITY"
+            and not document_or_security_fail
+        ):
+            return "RETRY"
+        return "REJECTED"
+
     def verify(
         self,
         front_b: bytes,
@@ -123,37 +164,34 @@ class VerifyService:
         )
         tamper_reject = tamper.get("status") == "TAMPERED"
 
-        status = "PROCESSING"
-        if (
-            face_match.get("status") == "MATCH"
-            and passive_liveness.get("is_live", True)
-            and active_ok
-            and not qr_reject
-            and not tamper_reject
-            and not multiple_faces
-        ):
-            status = "VERIFIED"
-        elif (
-            face_match.get("status") != "MATCH"
-            or not passive_liveness.get("is_live", True)
-            or not active_ok
-            or face.get("face_count_id", 0) == 0
-            or face.get("face_count_selfie", 0) == 0
-            or qr_reject
-            or tamper_reject
-            or multiple_faces
-        ):
-            status = "REJECTED"
+        status = self._decide_status(
+            face_match.get("status", ""),
+            passive_liveness,
+            active_ok,
+            qr_reject,
+            tamper_reject,
+            face.get("face_count_id", 0),
+            face.get("face_count_selfie", 0),
+            multiple_faces,
+        )
 
+        retake_reason = None
         rejection = None
-        if status == "REJECTED":
+        if status == "RETRY":
+            retake_reason = passive_liveness.get("reason") or (
+                "Selfie image too blurry; please retake in better focus/lighting"
+            )
+        elif status == "REJECTED":
             reasons = []
             if face_match.get("status") != "MATCH":
                 reasons.append("Face mismatch" if face_match.get("status") == "NO_MATCH" else "Face match too weak")
             if not passive_liveness.get("is_live", True):
-                label = passive_liveness.get("label")
-                suffix = f" ({label})" if label and label not in ("no_face",) else ""
-                reasons.append("Passive liveness failed" + suffix)
+                if passive_liveness.get("status") == "LOW_QUALITY":
+                    reasons.append("Selfie image too blurry (retake recommended)")
+                else:
+                    label = passive_liveness.get("label")
+                    suffix = f" ({label})" if label and label not in ("no_face",) else ""
+                    reasons.append("Passive liveness failed" + suffix)
             if not active_ok:
                 reasons.append("Active liveness failed: " + str(active_liveness.get("message", "")))
             if face.get("face_count_id", 0) == 0 or face.get("face_count_selfie", 0) == 0:
@@ -165,11 +203,11 @@ class VerifyService:
             if tamper_reject:
                 reasons.append("Document tamper detected (suspected photo/content substitution)")
             rejection = "; ".join(reasons) or "Verification failed"
-        elif status == "VERIFIED":
-            rejection = None
 
         return {
             "status": status,
+            "retake_required": status == "RETRY",
+            "retake_reason": retake_reason,
             "ocr": {"front": ocr_front, "back": ocr_back},
             "qr": {"front": qr_front, "back": qr_back, "fields": qr_fields, "enabled": self.qr_enabled},
             "qr_consistency": qr_consistency,

@@ -51,9 +51,12 @@ Tunable via environment variables (on the AI service):
 | `AI_FAS_REAL_THRESHOLD` | `0.5` | Min real-class probability to pass. |
 | `AI_FAS_DEVICE` | `auto` | `auto`, `cpu` or `cuda`. |
 | `AI_FAS_TTA` | `true` | Average the verdict over a horizontal flip (test-time augmentation). |
+| `AI_FAS_BLUR_GATE` | `25.0` | Laplacian-variance gate on the detected face crop before FAS; below it the service returns `LOW_QUALITY`/`RETRY` instead of a spoof verdict. `0` disables the gate. |
 
 When torch or the checkpoint is unavailable, or if inference raises, the service
-falls back to the Laplacian-variance blur check (threshold `25.0`).
+falls back to the Laplacian-variance blur check (threshold `25.0`). The quality
+gate only runs while the MiniFASNet engine is available and is measured on the
+detected face crop; calibrate its threshold on deployment images.
 
 ## Active liveness (head-pose challenge)
 `app/services/active_liveness_service.py` checks the straight / turn-left /

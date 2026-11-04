@@ -11,6 +11,9 @@ venv/
 # Dev / train không cần trong image deploy
 tests/
 training/
+data/
+evaluation/
+reports/
 *.md
 README-hf.md
 

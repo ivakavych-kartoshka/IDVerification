@@ -176,7 +176,7 @@ class FaceService:
                 return self.embed(aligned)
         # 2) fallback: any detected face box, crop (with margin) and embed
         for cand in self._tile_images(img_rgb):
-            for box in self.detect_faces(cand):
+            for box in self.detect_face_boxes(cand):
                 crop = self._crop_square(cand, box)
                 if crop is None:
                     continue

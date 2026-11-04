@@ -21,16 +21,19 @@ Output (đúng layout ``CardTamperDataset``)::
     <out>/forged/*.jpg
     <out>/masks/<stem>.png        # trắng = vùng altered (chỉ ảnh forged)
 
-Ảnh được giữ nguyên tên gốc; nếu trùng tên giữa các device thì thêm tiền tố
-đường dẫn để không ghi đè.
+Ảnh được đổi tên thành ``<device>__<stem gốc>.jpg`` — **luôn** gắn tên thiết bị
+(thư mục cha) làm tiền tố; trùng stem giữa các device thì nối thêm ``__<n>``.
+Trước đây chỉ gắn tiền tố khi trùng tên, khiến một nhóm file không có device
+trong tên — và nhóm đó trùng với nhãn (100% forged ở prepared/test), biến tên
+file thành tín hiệu phân nhóm giả khi phân tích theo device.
 
 Ví dụ::
 
     cd ai
     python training/prepare_fantasyid.py ^
-        --src D:/datasets/fantasyid/extract/FantasyID/train ^
-        --csv D:/datasets/fantasyid/extract/FantasyID/train.csv ^
-        --out D:/datasets/fantasyid/prepared/train
+        --src data/fantasyid/extract/FantasyID/train ^
+        --csv data/fantasyid/extract/FantasyID/train.csv ^
+        --out data/fantasyid/prepared/train
 
     python training/prepare_fantasyid.py ^
         --src .../test --csv .../test.csv --out .../prepared/test
@@ -113,12 +116,14 @@ def _mask_from_boxes(json_path: str, w: int, h_img: int, dilate: int) -> Optiona
 
 
 def _unique_stem(rel: str, used: Dict[str, int]) -> str:
+    """Stem duy nhất, **luôn** gắn tên thư mục cha (device) làm tiền tố.
+
+    Quy tắc cũ chỉ thêm tiền tố khi trùng stem -> file đầu tiên mỗi stem giữ
+    tên trần, và nhóm "không có device" đó trùng với nhãn forged (test:
+    100% forged) -> tên file thành tín hiệu shortcut trong mọi phân tích theo
+    device. Luôn prefix để mọi stem mang cùng lượng thông tin.
+    """
     stem = os.path.splitext(os.path.basename(rel))[0]
-    if stem not in used:
-        used[stem] = 0
-        return stem
-    used[stem] += 1
-    # gắn thêm tên thư mục cha để tránh trùng
     parent = os.path.basename(os.path.dirname(rel))
     cand = f"{parent}__{stem}"
     n = 1

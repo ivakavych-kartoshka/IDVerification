@@ -1,0 +1,58 @@
+{
+  "tag": "smoke_video",
+  "real_dir": "data/smoke/real",
+  "attack_dir": "data/smoke/attack",
+  "n_real": 3,
+  "n_attack": 3,
+  "n_no_face": 0,
+  "engine": "MiniFASNetV2 (real_prob)",
+  "at_threshold": {
+    "threshold": 0.5,
+    "apcer": 1.0,
+    "bpcer": 0.6667,
+    "acer": 0.8333
+  },
+  "eer": {
+    "eer": 1.0,
+    "threshold": 0.8747
+  },
+  "operating_points": {
+    "bpcer_5pct": {
+      "threshold": 0.436,
+      "apcer": 1.0,
+      "bpcer": 0.3333,
+      "acer": 0.6667
+    },
+    "bpcer_10pct": {
+      "threshold": 0.44,
+      "apcer": 1.0,
+      "bpcer": 0.3333,
+      "acer": 0.6667
+    }
+  },
+  "per_attack": {
+    "attack": {
+      "n": 3,
+      "apcer": 1.0,
+      "median_real_prob": 0.921
+    }
+  },
+  "latency_ms": {
+    "n": 6,
+    "median": 17.27,
+    "p95": 456.09
+  },
+  "scores": {
+    "real": {
+      "mean": 0.4825,
+      "p10": 0.4398,
+      "median": 0.4695
+    },
+    "attack": {
+      "mean": 0.9275,
+      "p90": 0.9737,
+      "median": 0.921
+    }
+  },
+  "warning": ""
+}

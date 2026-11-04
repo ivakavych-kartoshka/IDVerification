@@ -53,6 +53,14 @@ lerna-debug.log*
 be/uploads/*
 !be/uploads/.gitkeep
 
+# === Datasets (nặng, KHÔNG commit) ===
+ai/data/
+
+# === Evaluation Artifacts ===
+# Giữ lại JSON/CSV kết quả (hồ sơ số liệu cho báo cáo), bỏ log thô
+ai/reports/*.err
+*.err
+
 # === Test Coverage ===
 coverage/
 **/coverage/
