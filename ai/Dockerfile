@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libglib2.0-0 \
         libgl1 \
         libegl1 \
+        libgles2 \
         libgomp1 \
         ffmpeg \
         libsm6 \
