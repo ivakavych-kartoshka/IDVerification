@@ -1,0 +1,1173 @@
+% !TEX program = xelatex
+% =====================================================================
+% BÁO CÁO KIỂM THỬ PHẦN MÔ HÌNH AI - HỆ THỐNG eKYC / ID VERIFICATION
+% Nguồn số liệu: ai/tests, ai/evaluation, ai/reports
+% Biên dịch bằng XeLaTeX hoặc LuaLaTeX (KHÔNG dùng pdfLaTeX):
+%   xelatex bao_cao_kiem_thu_ai.tex   (chạy 2 lần để cập nhật tham chiếu)
+% =====================================================================
+\documentclass[12pt,a4paper]{article}
+
+% ---------- Font & ngôn ngữ ----------
+\usepackage{fontspec}
+\usepackage[main=vietnamese,provide=*]{babel}
+
+% Dùng Times New Roman / Arial / Consolas nếu có; nếu không (ví dụ Overleaf)
+% thì tự động chuyển sang font tương đương.
+\ExplSyntaxOn
+\NewDocumentCommand{\FontOrElse}{mmm}{% kiểm tra font bằng fontspec: {tên font}{nếu có}{nếu không}
+  \fontspec_font_if_exist:nTF{#1}{#2}{#3}}
+\ExplSyntaxOff
+
+\FontOrElse{Times New Roman}{\setmainfont{Times New Roman}}{%
+  \FontOrElse{TeX Gyre Termes}{\setmainfont{TeX Gyre Termes}}{%
+  \FontOrElse{Liberation Serif}{\setmainfont{Liberation Serif}}{}}}
+\FontOrElse{Arial}{\setsansfont{Arial}}{%
+  \FontOrElse{TeX Gyre Heros}{\setsansfont{TeX Gyre Heros}}{%
+  \FontOrElse{Liberation Sans}{\setsansfont{Liberation Sans}}{}}}
+\FontOrElse{Consolas}{\setmonofont{Consolas}}{%
+  \FontOrElse{DejaVu Sans Mono}{\setmonofont{DejaVu Sans Mono}[Scale=0.9]}{%
+  \FontOrElse{Liberation Mono}{\setmonofont{Liberation Mono}[Scale=0.9]}{}}}
+
+% ---------- Bố cục ----------
+\usepackage[a4paper,left=3cm,right=2cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage{setspace}
+\setstretch{1.3}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
+\setlength{\emergencystretch}{2em}
+
+% ---------- Toán, bảng, danh sách ----------
+\usepackage{amsmath,amssymb}
+\usepackage{siunitx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf,labelsep=period}
+\renewcommand{\arraystretch}{1.15}
+
+% ---------- Khung mã lệnh ----------
+\usepackage{listings}
+\definecolor{codebg}{gray}{0.96}
+\lstdefinelanguage{PS}{%
+  morekeywords={cd,python},
+  morecomment=[l]{\#},
+  morestring=[b]"}
+\lstset{
+  language=PS,
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{gray!50},
+  xleftmargin=2mm,
+  xrightmargin=2mm,
+  keywordstyle=\color{blue!70!black},
+  commentstyle=\color{gray},
+  stringstyle=\color{green!40!black},
+  showstringspaces=false,
+}
+
+% ---------- Liên kết ----------
+\usepackage{hyperref}
+\hypersetup{hidelinks}
+
+% ---------- Tiêu đề ----------
+\title{\textbf{BÁO CÁO KIỂM THỬ PHẦN MÔ HÌNH AI\\[1mm]
+TRONG HỆ THỐNG XÁC THỰC DANH TÍNH ĐIỆN TỬ (eKYC)}\\[4mm]
+\large Mã dự án: IDVerification / AI eKYC Service}
+
+\author{
+  \textbf{Sinh viên:} \underline{\hspace{5cm}}\\[2mm]
+  \textbf{Mã sinh viên:} \underline{\hspace{4cm}}\\[2mm]
+  \textbf{Khoa:} \underline{\hspace{5cm}}\\[2mm]
+  \textbf{Năm học:} \underline{\hspace{4cm}}
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Báo cáo này tổng hợp kết quả chạy kiểm thử đơn vị (unit test) và các đánh giá định lượng đã thực hiện
+trong quá trình xây dựng hệ thống xác thực danh tính điện tử (eKYC) cho căn cước công dân (CCCD) và
+chứng minh nhân dân (CMND) Việt Nam. Phạm vi gồm bảy nhóm chức năng của dịch vụ AI: nhận dạng ký tự
+quang học (OCR), đối chiếu mã QR, phát hiện và so khớp khuôn mặt, passive liveness, cổng chất lượng ảnh
+(liveness gate), active liveness và phát hiện giấy tờ bị chỉnh sửa (tamper detection).
+
+Toàn bộ \textbf{44/44 test} đều đạt (0 thất bại, 0 bị bỏ qua), thời gian thực thi lần gần nhất khoảng
+\num{10.64} giây. Bên cạnh đó, hệ thống được đánh giá định lượng trên ba bộ dữ liệu công khai là
+CASIA-FASD (passive liveness), LFW (so khớp khuôn mặt) và FantasyID (phát hiện giả mạo giấy tờ), đồng thời
+đo độ trễ tuần tự của pipeline. Kết quả cho thấy passive liveness và so khớp khuôn mặt đạt hiệu năng tốt
+trên dữ liệu công khai, trong khi mô-đun TamperNet chưa đạt yêu cầu trên FantasyID và cần được cải thiện.
+\end{abstract}
+
+% =====================================================================
+\section{Tổng quan kết quả kiểm thử}
+% =====================================================================
+Bộ kiểm thử gồm \textbf{44 test}, kết quả \textbf{44 passed, 0 failed, 0 skipped} (tỷ lệ thành công 100\%).
+Thời gian chạy lần gần nhất là \num{10.64} giây (lần đầu ghi nhận: \num{11.97} giây).
+
+\begin{table}[H]
+  \centering
+  \caption{Tổng hợp kết quả kiểm thử đơn vị theo nhóm chức năng}
+  \label{tab:summary}
+  \small
+  \begin{tabular}{@{}p{3.6cm}p{5.2cm}cccc@{}}
+    \toprule
+    \textbf{Nhóm} & \textbf{Tệp kiểm thử} & \textbf{Số test} & \textbf{PASS} & \textbf{FAIL} & \textbf{SKIP}\\
+    \midrule
+    OCR & \path{test_ocr_service.py} & 4 & 4 & 0 & 0\\
+    QR cross-check & \path{test_qr_service.py} & 8 & 8 & 0 & 0\\
+    Face detection / matching & \path{test_face_service.py} & 6 & 6 & 0 & 0\\
+    Passive Liveness (MiniFASNetV2) & \path{test_liveness.py} & 4 & 4 & 0 & 0\\
+    Liveness Gate / Decision & \path{test_liveness_gate.py} & 6 & 6 & 0 & 0\\
+    Active Liveness & \path{test_active_liveness.py} & 4 & 4 & 0 & 0\\
+    Tamper Detection & \path{test_tamper.py} & 12 & 12 & 0 & 0\\
+    \midrule
+    \textbf{Tổng} & & \textbf{44} & \textbf{44} & \textbf{0} & \textbf{0}\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Các test có thời gian chạy lâu nhất:
+\begin{itemize}
+  \item Regression khoảng giá trị đầu vào của MiniFASNetV2: \num{2.36} giây.
+  \item Hợp đồng (contract) của tamper engine khi chưa nạp model: \num{1.81} giây.
+  \item Bộ phát hiện khuôn mặt UltraFace chạy thực tế: \num{1.13} giây.
+  \item TamperNet forward / loss: \num{0.16} giây.
+\end{itemize}
+
+% =====================================================================
+\section{Phương pháp và môi trường kiểm thử}
+% =====================================================================
+\subsection{Môi trường thực nghiệm}
+\begin{table}[H]
+  \centering
+  \caption{Môi trường chạy kiểm thử}
+  \label{tab:env}
+  \small
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Thành phần} & \textbf{Giá trị}\\
+    \midrule
+    Hệ điều hành & Windows 10, build 26200\\
+    Python & 3.11.9\\
+    pytest & 9.1.1\\
+    PyTorch & 2.13.0 + cu126 (có hỗ trợ CUDA)\\
+    GPU & NVIDIA GeForce RTX 4060 Laptop (8 GB VRAM)\\
+    ONNX Runtime & 1.24.3 (CPUExecutionProvider)\\
+    OpenCV & 4.10.0\\
+    NumPy & 2.3.5\\
+    MediaPipe & 1.0.1\\
+    Thời gian chạy toàn bộ & 44 test trong khoảng \num{10.64} giây\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Phạm vi và tiêu chí đánh giá}
+\begin{itemize}
+  \item Kiểm thử đơn vị tập trung vào logic quyết định, tiền xử lý, cơ chế dự phòng (fallback) và ngưỡng.
+  \item Kiểm thử tích hợp nội bộ giữa các service trong dịch vụ AI được thực hiện thông qua đối tượng giả (\texttt{Mock}).
+  \item Bộ kiểm thử không yêu cầu kết nối Internet hay cơ sở dữ liệu.
+  \item Một số test chạy model thật; các test còn lại chỉ kiểm tra logic thuần.
+  \item Một số mô-đun chưa có test tự động riêng và được đánh giá thông qua benchmark trên dữ liệu công khai (Mục~\ref{sec:quant}).
+\end{itemize}
+
+\subsection{Các lệnh chạy kiểm thử}
+Chạy toàn bộ bộ kiểm thử (PowerShell):
+\begin{lstlisting}
+cd ai
+$env:PYTHONIOENCODING="utf-8"
+python -m pytest tests -v --tb=short
+\end{lstlisting}
+
+Chạy riêng từng nhóm:
+\begin{lstlisting}
+cd ai
+$env:PYTHONIOENCODING="utf-8"
+
+# OCR
+python -m pytest tests/test_ocr_service.py -v
+# QR cross-check
+python -m pytest tests/test_qr_service.py -v
+# Face detection & matching
+python -m pytest tests/test_face_service.py -v
+# Passive liveness
+python -m pytest tests/test_liveness.py -v
+# Liveness gate & decision logic
+python -m pytest tests/test_liveness_gate.py -v
+# Active liveness
+python -m pytest tests/test_active_liveness.py -v
+# Tamper detection
+python -m pytest tests/test_tamper.py -v
+\end{lstlisting}
+
+% =====================================================================
+\section{Chi tiết kiểm thử theo nhóm chức năng}
+% =====================================================================
+\subsection{OCR}
+\textit{Tệp kiểm thử:} \path{tests/test_ocr_service.py}
+
+\textbf{Mục tiêu.} Kiểm tra logic trích xuất số giấy tờ từ văn bản OCR, gồm ưu tiên số CCCD 12 chữ số và
+dự phòng sang CMND 9 chữ số.
+
+\begin{table}[H]
+  \centering
+  \caption{Kịch bản kiểm thử nhóm OCR}
+  \label{tab:ocr-results}
+  \small
+  \begin{tabular}{@{}p{4.2cm}p{5.6cm}p{4.2cm}@{}}
+    \toprule
+    \textbf{Kịch bản} & \textbf{Đầu vào} & \textbf{Kết quả mong đợi}\\
+    \midrule
+    Có số CCCD 12 chữ số & Văn bản OCR chứa ``Số: 012345678901'' & Trả về \texttt{012345678901}\\
+    Có cả CCCD 12 và CMND 9 chữ số & ``CMND 123456789 / CCCD 012345678901'' & Ưu tiên trả về số CCCD\\
+    Chỉ có CMND 9 chữ số & ``CMND số 123456789'' & Trả về số CMND\\
+    Không có số giấy tờ & Văn bản không chứa số hợp lệ & Trả về \texttt{null}\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{QR cross-check}
+\textit{Tệp kiểm thử:} \path{tests/test_qr_service.py}
+
+\textbf{Mục tiêu.} Kiểm tra giải mã và phân tích (parse) payload QR, đối chiếu QR với kết quả OCR, xử lý các
+trường hợp thiếu trường legacy, thiếu QR, thiếu OCR và giải mã ảnh mẫu (fixture).
+
+\textbf{Kết quả.}
+\begin{itemize}
+  \item Giải mã thành công ảnh mẫu \path{tests/fixtures/cccd_back_qr.png}, thu được số giấy tờ có dạng
+        \texttt{068096******} (đã che các chữ số cuối).
+  \item Phân tích payload đúng cho cả hai trường hợp có và không có số CMND cũ (legacy).
+  \item Đối chiếu OCR $\leftrightarrow$ QR trả về một trong bốn trạng thái: \texttt{MATCH}, \texttt{PARTIAL},
+        \texttt{MISMATCH}, \texttt{NOT\_FOUND}.
+  \item So sánh không phân biệt chữ hoa/thường, bỏ qua dấu thanh và ký tự phân tách.
+\end{itemize}
+
+\subsection{Face detection và matching}
+\textit{Tệp kiểm thử:} \path{tests/test_face_service.py}
+
+\textbf{Mục tiêu.} Kiểm tra kích thước đầu vào của UltraFace, tiền xử lý, hậu xử lý (NMS) và cơ chế dự phòng
+khi trích xuất embedding.
+
+\begin{itemize}
+  \item Kích thước đầu vào của UltraFace phải là \texttt{(640, 480)}.
+  \item Tiền xử lý tạo tensor \texttt{(1, 3, 480, 640)} kiểu float32.
+  \item Hậu xử lý áp dụng NMS và loại bỏ các box có điểm thấp; giữ lại các box tách biệt.
+  \item Khi không có box từ landmark, embedding dùng box do detector phát hiện.
+\end{itemize}
+
+\subsection{Passive Liveness}
+\textit{Tệp kiểm thử:} \path{tests/test_liveness.py}
+
+\textbf{Mục tiêu.} Kiểm tra hình học của bước crop khuôn mặt và một regression quan trọng: đầu vào của
+MiniFASNetV2 phải nằm trong khoảng $[0, 255]$, không được chuẩn hóa về $[0, 1]$.
+
+\begin{itemize}
+  \item Box được mở rộng 2,7 lần vẫn nằm trong ảnh; ảnh crop có kích thước $80\times 80$.
+  \item Hàm dự đoán trả về ba xác suất cho ba lớp: \textit{real}, \textit{print}, \textit{replay}, với tổng bằng 1.
+  \item Trạng thái \texttt{is\_live} được suy ra từ lớp \textit{real}.
+\end{itemize}
+
+\subsection{Liveness Gate và quyết định trạng thái}
+\textit{Tệp kiểm thử:} \path{tests/test_liveness_gate.py}
+
+\textbf{Mục tiêu.} Kiểm tra cổng chất lượng ảnh (blur gate) và hành vi \textit{retry}/\textit{reject} của
+\texttt{VerifyService}.
+
+\begin{itemize}
+  \item Ảnh quá mờ: không gọi MiniFASNet, trả về \texttt{LOW\_\allowbreak QUALITY} và yêu cầu chụp lại (\texttt{retake\_\allowbreak required}).
+  \item Ảnh mờ và không phát hiện được khuôn mặt: yêu cầu chụp lại.
+  \item Có thể tắt blur gate; khi đó vẫn cho phép gọi FAS.
+  \item Ảnh rõ nét: cho phép gọi FAS.
+  \item Quyết định trạng thái: \texttt{RETRY} khi ảnh mờ, \texttt{REJECTED} khi lỗi giấy tờ/tamper,
+        \texttt{VERIFIED} khi hợp lệ.
+  \item Luồng verify với ảnh selfie mờ phải trả về \texttt{RETRY} kèm \texttt{retake\_reason}.
+\end{itemize}
+
+\subsection{Active Liveness}
+\textit{Tệp kiểm thử:} \path{tests/test_active_liveness.py}
+
+\textbf{Mục tiêu.} Kiểm tra các trường hợp không có frame, phát hiện chuỗi frame tĩnh (frozen) và xử lý chuỗi
+frame có thay đổi.
+
+\begin{itemize}
+  \item Danh sách frame rỗng được xử lý đúng.
+  \item Các frame giống hệt nhau bị xác định là tĩnh; các frame thay đổi và frame đơn lẻ thì không.
+\end{itemize}
+
+\subsection{Tamper Detection}
+\textit{Tệp kiểm thử:} \path{tests/test_tamper.py}
+
+\textbf{Mục tiêu.} Kiểm tra kiến trúc TamperNet, hàm loss, letterbox, trích vùng nghi ngờ từ mask, các tín hiệu
+heuristic và hợp đồng của engine chỉ dùng heuristic.
+
+\begin{itemize}
+  \item Kích thước đầu ra của TamperNet: \texttt{(batch,)} cho logit và \texttt{(batch, 1, 64, 64)} cho mask;
+        kích thước ảnh phải chia hết cho kích thước block.
+  \item Mô hình có dưới $3\times 10^{6}$ tham số; giá trị loss hữu hạn.
+  \item Letterbox/unletterbox giữ box nằm trong phạm vi ảnh gốc.
+  \item Các tín hiệu pháp y (forensic): phát hiện lưới JPEG (blockiness), tỷ lệ tần số cao thấp trên ảnh phẳng,
+        có/không có box ảnh chân dung; trọng số điểm được chuẩn hóa lại.
+  \item Engine chỉ dùng heuristic \textbf{không bao giờ} trả về \texttt{TAMPERED}, chỉ trả về \texttt{SUSPICIOUS}.
+  \item Chế độ tắt kiểm tra trả về \texttt{DISABLED}; khi chưa nạp model, engine vẫn trả về đúng hợp đồng.
+\end{itemize}
+
+% =====================================================================
+\section{Dữ liệu đánh giá, nguồn trích dẫn và giao thức}\label{sec:datasets}
+% =====================================================================
+Ba bộ dữ liệu công khai được dùng để đánh giá định lượng các mô-đun AI. Nguyên tắc chung:
+(i) chỉ dùng dữ liệu để \emph{đánh giá}, không huấn luyện lại trên đó;
+(ii) ngưỡng quyết định được chọn trên tập validation (nếu có) và chỉ chấm tập test một lần;
+(iii) mọi kết quả đều tái lập được từ các tệp JSON/CSV trong \path{ai/reports/}.
+Bảng~\ref{tab:dataset-sources} tóm tắt nguồn gốc và quy mô; Bảng~\ref{tab:dataset-access} ghi
+điều kiện truy cập và vị trí lưu trữ cục bộ.
+
+\begin{table}[H]
+  \centering
+  \caption{Nguồn gốc và quy mô các bộ dữ liệu đánh giá}
+  \label{tab:dataset-sources}
+  \footnotesize
+  \begin{tabular}{@{}p{2.15cm}p{2.0cm}p{5.35cm}p{4.8cm}@{}}
+    \toprule
+    \textbf{Dataset} & \textbf{Mô-đun} & \textbf{Nguồn / trích dẫn} & \textbf{Quy mô sử dụng}\\
+    \midrule
+    CASIA-FASD & Passive liveness & Zhang et al. \cite{zhang2012casia}; CBSR (Viện Hàn lâm Khoa học Trung Quốc); gói crop 73 MB & 2.660 frame sau khử trùng lặp (674 thật / 1.986 giả); 30 người / 360 video; $256\times256$\\
+    LFW View 1 & So khớp khuôn mặt & Huang et al. \cite{huang2008lfw}; Đại học Massachusetts Amherst & 13.233 ảnh / 5.749 người; dùng 4.992 ảnh duy nhất; 2.200 cặp val + 1.000 cặp test\\
+    FantasyID & Phát hiện giả mạo giấy tờ & Korshunov et al. \cite{korshunov2025fantasyid}; Zenodo record 17063366 (v1, 2,6 GB) & Train 1.899 (633 thật / 1.266 giả); val 284 (116 / 168); test 1.385 (300 / 1.085); 911 mask GT\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Điều kiện truy cập, giấy phép và vị trí dữ liệu cục bộ}
+  \label{tab:dataset-access}
+  \footnotesize
+  \begin{tabular}{@{}p{2.1cm}p{4.6cm}p{3.4cm}p{4.2cm}@{}}
+    \toprule
+    \textbf{Dataset} & \textbf{Điều kiện truy cập / giấy phép} & \textbf{Vị trí cục bộ} & \textbf{Liên kết}\\
+    \midrule
+    CASIA-FASD & Học thuật, phi thương mại; gói crop là bản cắt lại không chính thức & \path{ai/data/archive (1)} & \href{http://www.cbsr.ia.ac.cn/english/FaceAntiSpoofDatabases.asp}{cbsr.ia.ac.cn}\\
+    LFW & Mở cho nghiên cứu học thuật & \path{ai/data/lfw-deepfunneled} & \href{http://vis-www.cs.umass.edu/lfw/}{vis-www.cs.umass.edu/lfw}\\
+    FantasyID & Giấy phép mở theo công bố Zenodo & \path{ai/data/fantasyid} & \href{https://zenodo.org/records/17063366}{zenodo.org/records/17063366}\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{CASIA-FASD --- passive liveness}
+\textbf{Nguồn.} Bộ dữ liệu do nhóm CBSR (Chinese Academy of Sciences) công bố, mô tả trong
+Zhang et al. \cite{zhang2012casia}. Bản gốc gồm 50 chủ thể, 600 video (3 video thật + 9 video tấn công
+mỗi chủ thể), ba loại tấn công (ảnh in cong, ảnh in khoét mắt, replay video) và ba mức chất lượng.
+Báo cáo này dùng \emph{gói crop khuôn mặt} 73 MB (4.063 ảnh JPEG $256\times256$) --- là bản cắt lại
+không chính thức, không có video gốc.
+
+\textbf{Cấu trúc và xử lý.} Tên tệp có dạng
+\path{<subject>_<HR?>_<video>.avi_<frame>_<real|fake>.jpg}; nhãn chỉ có \texttt{real}/\texttt{fake},
+không tách \textit{print}/\textit{replay}. Gói crop có split không dùng được: 20/20 chủ thể của
+\texttt{train\_img} nằm trong \texttt{test\_img} và 1.403 frame trùng khóa
+\texttt{(subject, quality, video, frame)}. Vì không huấn luyện trên bộ này, hai split được gộp và
+khử trùng lặp, còn \textbf{2.660 frame duy nhất} (674 thật / 1.986 giả), 30 người / 360 video.
+
+\textbf{Giao thức.} Bộ phân loại là MiniFASNetV2 \cite{minivision2020silent}, checkpoint tiền huấn luyện
+trên CelebA-Spoof \cite{zhang2020celeba}. Chấm trực tiếp trên crop (\texttt{--no-detect}) để không trộn lỗi bộ phát hiện;
+ngưỡng giữ nguyên 0,5 như cấu hình triển khai (\texttt{AI\_FAS\_REAL\_THRESHOLD}), không chọn lại
+trên dữ liệu này. Đơn vị đánh giá chính là \textbf{video} (trung bình \texttt{real\_prob} của các frame)
+vì các frame trong cùng clip tương quan mạnh; kết quả mức frame được báo cáo kèm. Chỉ số theo
+ISO/IEC 30107-3 \cite{iso30107}: APCER, BPCER, ACER và EER.
+
+\subsection{LFW --- so khớp khuôn mặt}
+\textbf{Nguồn.} Labeled Faces in the Wild (LFW), phiên bản View 1 deep-funneled, do Huang et al.
+\cite{huang2008lfw} công bố; ảnh đã căn mặt và được chuẩn hóa kích thước. Bộ gốc có 13.233 ảnh của
+5.749 người.
+
+\textbf{Giao thức.} Dùng đúng cặp chuẩn: 1.100 cặp genuine + 1.100 cặp impostor của DevTrain làm
+validation, và 500 + 500 cặp của DevTest làm test. Mỗi ảnh được trích embedding bằng đúng pipeline
+triển khai: UltraFace \cite{linzaer2019ultraface} $\rightarrow$ MediaPipe 5 điểm
+\cite{lugaresi2019mediapipe} $\rightarrow$ ArcFace $112\times112$ \cite{deng2019arcface}. Điểm của
+một cặp là cosine similarity. Ngưỡng EER được chọn trên validation và áp nguyên sang test; ngưỡng
+production 0,30 (\texttt{AI\_MATCH\_SCORE}) được báo cáo song song. Cặp có ít nhất một ảnh không phát
+hiện được mặt nhận điểm 0 và vẫn được tính vào FAR/FRR chính; báo cáo thêm \texttt{detected\_only}
+để tách lỗi phát hiện khỏi chất lượng embedding.
+
+\subsection{FantasyID --- phát hiện giả mạo giấy tờ}
+\textbf{Nguồn.} FantasyID do Korshunov et al. \cite{korshunov2025fantasyid} công bố (IJCB 2025),
+gồm 13 mẫu thẻ giả tưởng, 13 ngôn ngữ, ảnh bona fide và các tấn công số (face swap, inpaint văn bản,
+digital manipulation), kèm vùng bị sửa trong JSON. Bản dùng trong báo cáo là v1 trên Zenodo
+(2,6 GB, giấy phép mở).
+
+\textbf{Cấu trúc.} Sau khi chuyển sang layout \path{bona_fide/ forged/ masks/}:
+train 1.899 ảnh (633 bona fide / 1.266 forged; 1.091 mask GT), val 284 ảnh (116 / 168), test 1.385 ảnh
+(300 / 1.085; 911 mask GT). Tập test có 150 tấn công \texttt{face} và 935 tấn công \texttt{text};
+các thiết bị gồm \texttt{huawei}, \texttt{iphone15}, \texttt{scan} và \texttt{iphone15pro}.
+
+\textbf{Giao thức.} Dùng đúng split train/test chính thức. Val là 20\% của train, cắt một lần bằng
+\path{torch.Generator().manual_seed(42)} và đóng băng thành \path{models/fantasyid_val.txt}.
+Calibration chỉ thấy val để chọn ngưỡng và trọng số fusion; test chỉ được chấm một lần. Báo cáo ba
+ngưỡng: 0,55 (triển khai), 0,57 (best-F1 trên val) và 0,675 (FPR 10\% trên val). Chỉ số gồm
+F1/Precision/Recall/FPR/FNR tại ngưỡng cố định, AUC, Average Precision (AP), recall theo loại tấn công,
+IoU định vị vùng sửa và độ trễ.
+
+\subsection{Các bộ dữ liệu cân nhắc nhưng chưa đưa vào}
+Để bảo đảm phạm vi và tính tái lập, báo cáo chưa dùng các bộ sau: Replay-Attack (Idiap) và MSU-MFSD
+cho liveness; OULU-NPU và NUAA cho tấn công in/replay; MIDV-2020/MIDV-500 cho OCR giấy tờ;
+DocTamper và SIDTD cho tamper. Lý do là cần ký thỏa thuận truy cập, dung lượng lớn, hoặc không có
+CCCD Việt Nam. Các bộ này được đề xuất cho giai đoạn tiếp theo (Mục~\ref{sec:future}).
+
+% =====================================================================
+\section{Kết quả đánh giá định lượng chi tiết}\label{sec:quant}
+% =====================================================================
+Bảng~\ref{tab:quant-summary} tóm tắt kết quả chính của ba bộ dữ liệu; các mục tiếp theo trình bày
+chi tiết từng bảng, từng ngưỡng và độ trễ/thông lượng (ms, FPS).
+
+\begin{table}[H]
+  \centering
+  \caption{Tóm tắt kết quả định lượng theo bộ dữ liệu}
+  \label{tab:quant-summary}
+  \small
+  \begin{tabular}{@{}p{2.4cm}p{2.5cm}p{4.2cm}p{4.2cm}@{}}
+    \toprule
+    \textbf{Dataset} & \textbf{Mô-đun} & \textbf{Chỉ số chính} & \textbf{Kết quả}\\
+    \midrule
+    CASIA-FASD & Passive liveness & Video EER / APCER / BPCER & 3,33\% / 0,00\% / 10,00\%\\
+    LFW & So khớp khuôn mặt & Test EER / FAR@0,30 / Accuracy & 2,00\% / 0,00\% / 98,30\%\\
+    FantasyID & Phát hiện giả mạo & Test AUC / AP / F1@0,55 & 0,3417 / 0,7429 / 0,4481\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+\subsection{Passive Liveness trên CASIA-FASD}
+\subsubsection{Cấu trúc dữ liệu}
+\begin{table}[H]
+  \centering
+  \caption{Cấu trúc dữ liệu CASIA-FASD sau khi gộp và khử trùng lặp}
+  \label{tab:casia-composition}
+  \small
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Thành phần} & \textbf{Giá trị}\\
+    \midrule
+    Số ảnh gốc trong gói crop & 4.063 ảnh JPEG $256\times256$\\
+    Sau khử trùng lặp & 2.660 frame duy nhất\\
+    Nhãn & 674 thật / 1.986 tấn công\\
+    Số người / số video & 30 / 360\\
+    Chất lượng video & HR: 30 thật / 90 tấn công; none (LR): 60 / 180\\
+    Nhãn tấn công & Chỉ \texttt{real}/\texttt{fake}; không tách print/replay\\
+    Ngưỡng quyết định & 0,5 (cố định, không chọn lại)\\
+    Đơn vị đánh giá chính & Video (trung bình \texttt{real\_prob} các frame)\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsubsection{Kết quả mức frame và mức video}
+\begin{table}[H]
+  \centering
+  \caption{Kết quả passive liveness (MiniFASNetV2) trên CASIA-FASD, TTA bật, ngưỡng 0,5}
+  \label{tab:fas-casia}
+  \footnotesize
+  \resizebox{\textwidth}{!}{%
+  \begin{tabular}{@{}lcccccccc@{}}
+    \toprule
+    \textbf{Mức} & \textbf{N thật} & \textbf{N tấn công} & \textbf{APCER} & \textbf{BPCER} & \textbf{ACER} & \textbf{EER (ngưỡng)} & \textbf{AUC} & \textbf{Median \texttt{real\_prob} (thật / giả)}\\
+    \midrule
+    Frame & 674 & 1.986 & 0,0136 & 0,1231 & 0,0684 & 0,0639 (0,176) & 0,9874 & 0,9778 / 0,0011\\
+    Video & 90 & 270 & 0,0000 & 0,1000 & 0,0500 & 0,0333 (0,264) & 0,9972 & 0,9475 / 0,0039\\
+    \bottomrule
+  \end{tabular}}
+\end{table}
+
+\subsubsection{Điểm vận hành theo mục tiêu BPCER}
+\begin{table}[H]
+  \centering
+  \caption{Điểm vận hành mức frame khi cố định BPCER (TTA bật)}
+  \label{tab:fas-operating}
+  \small
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Mục tiêu} & \textbf{Ngưỡng} & \textbf{APCER} & \textbf{BPCER} & \textbf{ACER}\\
+    \midrule
+    BPCER = 5\% & 0,122 & 0,0856 & 0,0504 & 0,0680\\
+    BPCER = 10\% & 0,360 & 0,0252 & 0,1009 & 0,0630\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsubsection{Kết quả theo chất lượng video}
+\begin{table}[H]
+  \centering
+  \caption{Kết quả CASIA-FASD theo nhóm chất lượng (TTA bật, ngưỡng 0,5)}
+  \label{tab:fas-quality}
+  \small
+  \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    \textbf{Nhóm} & \textbf{N thật} & \textbf{N tấn công} & \textbf{APCER} & \textbf{BPCER} & \textbf{ACER} & \textbf{EER (ngưỡng)}\\
+    \midrule
+    HR & 30 & 90 & 0,0000 & 0,2333 & 0,1167 & 0,0389 (0,179)\\
+    none (LR) & 60 & 180 & 0,0000 & 0,0333 & 0,0167 & 0,0167 (0,401)\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+Nhóm HR có 7/30 video thật bị từ chối; cỡ mẫu nhỏ nên khoảng tin cậy rộng, chưa đủ để kết luận
+``HR khó hơn LR''.
+
+\subsubsection{Ablation TTA và thông lượng}
+\begin{table}[H]
+  \centering
+  \caption{Ảnh hưởng của TTA trên CASIA-FASD (chấm trực tiếp trên crop $256\times256$)}
+  \label{tab:fas-tta}
+  \footnotesize
+  \resizebox{\textwidth}{!}{%
+  \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    \textbf{Cấu hình} & \textbf{Frame EER} & \textbf{Video BPCER} & \textbf{Video EER (ngưỡng)} & \textbf{Video AUC} & \textbf{Median / P95 (ms)} & \textbf{FPS}\\
+    \midrule
+    TTA bật (mặc định) & 0,0639 & 0,1000 & 0,0333 (0,264) & 0,9972 & 16,96 / 17,59 & 58,96\\
+    TTA tắt & 0,0669 & 0,0778 & 0,0222 (0,303) & 0,9981 & 8,48 / 8,84 & 117,92\\
+    \bottomrule
+  \end{tabular}}
+\end{table}
+FPS ở đây là thông lượng bộ phân loại trên crop $256\times256$ (FPS $= 1000 /$ median), không gồm
+bước phát hiện khuôn mặt. TTA không mang lại lợi ích rõ ràng: frame EER tốt hơn 0,3 điểm phần trăm
+nhưng video EER lại xấu hơn 1,1 điểm phần trăm và độ trễ gấp đôi.
+
+\subsubsection{Độ bền trước suy giảm chất lượng ảnh}
+Giữ nguyên checkpoint và ngưỡng 0,5, TTA tắt, áp từng điều kiện lên cả 2.660 crop rồi chấm lại ---
+không huấn luyện lại, không chọn ngưỡng trên tập này.
+
+\begin{table}[H]
+  \centering
+  \caption{Kết quả CASIA-FASD theo 9 điều kiện suy giảm ảnh (mức video, TTA tắt)}
+  \label{tab:fas-robustness}
+  \footnotesize
+  \resizebox{\textwidth}{!}{%
+  \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    \textbf{Điều kiện} & \textbf{APCER} & \textbf{BPCER} & \textbf{ACER} & \textbf{EER (ngưỡng)} & \textbf{AUC} & \textbf{$\Delta$EER so với clean}\\
+    \midrule
+    clean & 0,0000 & 0,0778 & 0,0389 & 0,0222 (0,303) & 0,9981 & ---\\
+    JPEG q70 & 0,0000 & 0,1000 & 0,0500 & 0,0333 (0,237) & 0,9977 & +0,0111\\
+    JPEG q50 & 0,0074 & 0,1111 & 0,0593 & 0,0333 (0,233) & 0,9977 & +0,0111\\
+    JPEG q30 & 0,0074 & 0,1111 & 0,0593 & 0,0444 (0,195) & 0,9968 & +0,0222\\
+    Gaussian blur $\sigma=1{,}5$ & 0,0000 & 0,2333 & 0,1167 & 0,0778 (0,084) & 0,9780 & +0,0556\\
+    Gaussian blur $\sigma=3{,}0$ & 0,0370 & 0,6222 & 0,3296 & 0,2889 (0,034) & 0,8271 & +0,2667\\
+    Hạ--nâng 128 px & 0,0000 & 0,1333 & 0,0667 & 0,0648 (0,122) & 0,9900 & +0,0426\\
+    Hạ--nâng 64 px & 0,0037 & 0,3556 & 0,1796 & 0,1222 (0,066) & 0,9478 & +0,1000\\
+    Giảm sáng $0{,}5\times$ & 0,0074 & 0,0778 & 0,0426 & 0,0241 (0,277) & 0,9976 & +0,0019\\
+    \bottomrule
+  \end{tabular}}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Ảnh hưởng của suy giảm ảnh theo nhóm chất lượng (mức video, TTA tắt)}
+  \label{tab:fas-robustness-quality}
+  \small
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Điều kiện} & \textbf{BPCER none} & \textbf{BPCER HR} & \textbf{APCER none} & \textbf{APCER HR}\\
+    \midrule
+    clean & 3,33\% & 16,67\% & 0,00\% & 0,00\%\\
+    JPEG q30 & 5,00\% & 23,33\% & 1,11\% & 0,00\%\\
+    Blur $\sigma=1{,}5$ & 11,67\% & 46,67\% & 0,00\% & 0,00\%\\
+    Blur $\sigma=3{,}0$ & 48,33\% & 90,00\% & 5,00\% & 1,11\%\\
+    Hạ--nâng 128 & 3,33\% & 33,33\% & 0,00\% & 0,00\%\\
+    Hạ--nâng 64 & 15,00\% & 76,67\% & 0,56\% & 0,00\%\\
+    Giảm sáng $0{,}5\times$ & 1,67\% & 20,00\% & 0,00\% & 2,22\%\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsubsection{Diễn giải}
+\begin{itemize}
+  \item \textbf{JPEG không phải nút thắt:} q30 vẫn giữ APCER 0,74\%, BPCER 11,11\%, EER 4,44\% ---
+        chỉ tăng khoảng 2,2 điểm phần trăm EER so với ảnh sạch.
+  \item \textbf{Mờ là failure mode chính:} $\sigma=1{,}5$ làm BPCER 23,33\% và EER 7,78\%;
+        $\sigma=3{,}0$ làm BPCER 62,22\%, EER 28,89\%, APCER 3,70\%, AUC giảm còn 0,8271.
+        Nguyên nhân là MiniFASNet dựa vào texture tần số cao; làm mờ xóa dấu vân tay này nên mặt thật
+        bị xếp nhầm sang print/replay (false spoof), không phải false accept.
+  \item \textbf{Hạ phân giải cũng nguy hiểm:} 128 px cho BPCER 13,33\%, EER 6,48\%; 64 px cho BPCER
+        35,56\%, EER 12,22\%, dù APCER vẫn thấp (0,37\%).
+  \item \textbf{Thiếu sáng $0{,}5\times$ gần như vô hại:} BPCER giữ 7,78\%, APCER 0,74\%, EER tăng nhẹ
+        lên 2,41\% --- nên ưu tiên chống mờ/hạ phân giải hơn là tăng sáng.
+  \item \textbf{Nhóm HR nhạy hơn:} blur $\sigma=1{,}5$ làm BPCER HR 46,67\% (so với 11,67\% nhóm
+        none); hạ 64 px làm 76,67\% (so với 15,00\%). Nhóm HR có biên quyết định mỏng hơn ngay cả khi
+        sạch (16,67\% so với 3,33\%), nên suy giảm đẩy qua ngưỡng.
+  \item \textbf{Blur gate đã triển khai:} Laplacian variance trên crop mặt, ngưỡng mặc định 25
+        (\path{AI_FAS_BLUR_GATE}); trung vị ảnh thật sạch là 133,8; chỉ 1,3\% ảnh thật sạch dưới 25,
+        trong khi 99,9\% ảnh blur $\sigma=1{,}5$ và 100\% ảnh blur $\sigma=3{,}0$ nằm dưới ngưỡng này.
+\end{itemize}
+
+\subsection{So khớp khuôn mặt trên LFW}
+\subsubsection{Cấu trúc dữ liệu và pipeline}
+\begin{table}[H]
+  \centering
+  \caption{Cấu trúc dữ liệu và cấu hình đánh giá LFW}
+  \label{tab:lfw-composition}
+  \small
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Thành phần} & \textbf{Giá trị}\\
+    \midrule
+    Số ảnh / số người & 13.233 / 5.749\\
+    Ảnh duy nhất được dùng & 4.992\\
+    Cache hit & 1.408\\
+    Ảnh không phát hiện được mặt & 2\\
+    Validation (DevTrain) & 2.200 cặp = 1.100 genuine + 1.100 impostor\\
+    Test (DevTest) & 1.000 cặp = 500 genuine + 500 impostor\\
+    Pipeline trích embedding & UltraFace $\rightarrow$ MediaPipe 5 điểm $\rightarrow$ ArcFace $112\times112$\\
+    Điểm của một cặp & Cosine similarity\\
+    Ngưỡng EER (val) / production & 0,1615 / 0,30\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsubsection{Kết quả trên validation và test}
+\begin{table}[H]
+  \centering
+  \caption{Kết quả so khớp khuôn mặt (ArcFace) trên LFW, ngưỡng quyết định 0,30}
+  \label{tab:face-lfw}
+  \footnotesize
+  \resizebox{\textwidth}{!}{%
+  \begin{tabular}{@{}lccccccc@{}}
+    \toprule
+    \textbf{Tập} & \textbf{Số cặp} & \textbf{FAR} & \textbf{FRR} & \textbf{TAR} & \textbf{Accuracy} & \textbf{EER (ngưỡng)} & \textbf{AUC}\\
+    \midrule
+    Validation (DevTrain) & 2.200 & 0,0000 & 0,0282 (31/1.100) & 0,9718 & 0,9859 & 0,0145 (0,1615) & 0,9933\\
+    Test (DevTest) & 1.000 & 0,0000 & 0,0340 (17/500) & 0,9660 & 0,9830 & 0,0200 (0,1600) & 0,9918\\
+    \bottomrule
+  \end{tabular}}
+\end{table}
+
+\subsubsection{Điểm vận hành và TAR@FAR}
+\begin{table}[H]
+  \centering
+  \caption{Kết quả test tại ngưỡng EER chọn trên validation (0,1615)}
+  \label{tab:lfw-eer-threshold}
+  \small
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Tập} & \textbf{FAR} & \textbf{FRR} & \textbf{TAR} & \textbf{Accuracy}\\
+    \midrule
+    Test (1.000 cặp) & 0,0160 (8/500) & 0,0200 (10/500) & 0,9800 & 0,9820\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{TAR tại các mức FAR mục tiêu (ngưỡng chọn trên validation)}
+  \label{tab:lfw-tar-far}
+  \small
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{FAR mục tiêu} & \textbf{Ngưỡng val} & \textbf{FAR test} & \textbf{TAR test}\\
+    \midrule
+    1\% & 0,1797 & 0,0160 & 0,9800\\
+    0,1\% & 0,2298 & 0,0040 & 0,9760\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsubsection{Detected-only và phân bố điểm}
+\begin{table}[H]
+  \centering
+  \caption{Kết quả \texttt{detected\_only} (loại các cặp có ảnh không phát hiện được mặt)}
+  \label{tab:lfw-detected}
+  \small
+  \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    \textbf{Tập} & \textbf{Số cặp} & \textbf{Genuine} & \textbf{Impostor} & \textbf{EER} & \textbf{AUC}\\
+    \midrule
+    Validation & 2.197 & 1.098 & 1.099 & 0,0137 & 0,9942\\
+    Test & 1.000 & 500 & 500 & 0,0200 & 0,9918\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Phân bố điểm cosine của các cặp LFW}
+  \label{tab:lfw-score-dist}
+  \small
+  \begin{tabular}{@{}lccc@{}}
+    \toprule
+    \textbf{Tập} & \textbf{Median genuine} & \textbf{Median impostor} & \textbf{Impostor cao nhất}\\
+    \midrule
+    Validation & 0,592 & 0,0076 & 0,2298\\
+    Test & 0,606 & 0,0092 & 0,2362\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsubsection{Thông lượng}
+Toàn bộ 3.200 cặp (val + test) chạy trong 105,14 giây, tương đương khoảng \textbf{30,4 cặp/giây}
+hay \textbf{32,9 ms/cặp}. Con số này gồm đọc ảnh, tiền xử lý và cache, không phải độ trễ thuần của
+mô hình embedding.
+
+\subsubsection{Diễn giải}
+\begin{itemize}
+  \item Ở ngưỡng triển khai 0,30: \textbf{không có false accept} trên 500 cặp impostor test;
+        17/500 cặp genuine bị từ chối (FRR 3,4\%), accuracy 98,3\%. Đây là điểm vận hành thiên về an toàn.
+  \item Hạ ngưỡng về 0,1615 (EER val) đổi 8 false accept lấy giảm FRR còn 2,0\%; accuracy 98,2\% ---
+        gần như cùng mức, nên \textbf{0,30 vẫn hợp lý} cho eKYC.
+  \item EER 2,0\% và AUC 0,9918 cho thấy embedding ArcFace tách genuine/impostor tốt; khoảng cách
+        trung vị khoảng 0,58 là rất lớn.
+  \item \textbf{Không suy rộng sang CCCD:} LFW là ảnh đã căn, frontal, không có glare, perspective
+        hay print; selfie--CCCD thật sẽ khó hơn. Ngoài ra checkpoint ArcFace tiền huấn luyện có thể
+        đã thấy LFW (không kiểm chứng được), nên đây là \textbf{cận trên lạc quan}.
+  \item \textbf{Bug đã sửa:} fallback \path{_aligned_embedding} từng lặp qua crop của
+        \path{detect_faces()} thay vì box của \path{detect_face_boxes()}, gây \texttt{TypeError}
+        khi MediaPipe không có landmark; đã sửa trong \path{face_service.py} và thêm regression test
+        \path{test_aligned_embedding_falls_back_to_detected_box}.
+\end{itemize}
+
+\subsection{Phát hiện giả mạo giấy tờ trên FantasyID}
+\subsubsection{Cấu trúc dữ liệu và split}
+\begin{table}[H]
+  \centering
+  \caption{Cấu trúc dữ liệu FantasyID sau khi chuẩn bị}
+  \label{tab:fantasyid-composition}
+  \small
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Thành phần} & \textbf{Giá trị}\\
+    \midrule
+    Nguồn & Zenodo record 17063366, phiên bản v1, 2,6 GB\\
+    Số mẫu thẻ / ngôn ngữ & 13 / 13\\
+    Train & 1.899 ảnh = 633 bona fide + 1.266 forged; 1.091 mask GT\\
+    Validation & 284 ảnh = 116 bona fide + 168 forged\\
+    Test & 1.385 ảnh = 300 bona fide + 1.085 forged; 911 mask GT\\
+    Tấn công trong test & \texttt{face}: 150; \texttt{text}: 935\\
+    Thiết bị trong test & \texttt{huawei}, \texttt{iphone15}, \texttt{scan}, \texttt{iphone15pro}\\
+    Ngưỡng báo cáo & 0,55 (triển khai) / 0,57 (best-F1 val) / 0,675 (FPR 10\% val)\\
+    Trọng số fusion & $w=0{,}70$ (model) + 0,30 (heuristic)\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsubsection{Kết quả theo ngưỡng quyết định}
+\begin{table}[H]
+  \centering
+  \caption{Kết quả TamperNet + heuristic trên tập test FantasyID tại ba ngưỡng}
+  \label{tab:tamper-fantasyid}
+  \footnotesize
+  \resizebox{\textwidth}{!}{%
+  \begin{tabular}{@{}lccccccccc@{}}
+    \toprule
+    \textbf{Ngưỡng} & \textbf{F1} & \textbf{Precision} & \textbf{Recall} & \textbf{FPR} & \textbf{FNR} & \textbf{TP} & \textbf{FP} & \textbf{TN} & \textbf{FN}\\
+    \midrule
+    0,55 (triển khai) & 0,4481 & 0,6710 & 0,3364 & 0,5967 & 0,6636 & 365 & 179 & 121 & 720\\
+    0,57 (best-F1 val) & 0,4301 & 0,6603 & 0,3189 & 0,5933 & 0,6811 & 346 & 178 & 122 & 739\\
+    0,675 (FPR 10\% val) & 0,2839 & 0,6278 & 0,1834 & 0,3933 & 0,8166 & 199 & 118 & 182 & 886\\
+    \bottomrule
+  \end{tabular}}
+\end{table}
+
+\subsubsection{Chỉ số không phụ thuộc ngưỡng và theo loại tấn công}
+\begin{table}[H]
+  \centering
+  \caption{Chỉ số không phụ thuộc ngưỡng và độ trễ của mô-đun tamper trên FantasyID test}
+  \label{tab:tamper-nonthreshold}
+  \small
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Chỉ số} & \textbf{Giá trị}\\
+    \midrule
+    AUC (fusion) & 0,3417\\
+    AUC (model-only) & 0,3190\\
+    Average Precision (AP) & 0,7429\\
+    IoU định vị (n = 911 mask GT) & trung bình 0,0 / trung vị 0,0\\
+    Độ trễ trung vị / P95 & 252,35 / 460,97 ms\\
+    Độ trễ trung bình / lớn nhất & 269,95 / 2.263,03 ms\\
+    Thông lượng (theo trung vị) & 3,96 ảnh/giây\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Recall theo loại tấn công trên FantasyID test, ngưỡng 0,55}
+  \label{tab:tamper-attack}
+  \small
+  \begin{tabular}{@{}lccc@{}}
+    \toprule
+    \textbf{Loại tấn công} & \textbf{Số mẫu} & \textbf{Recall} & \textbf{Precision so với bona fide}\\
+    \midrule
+    \texttt{face} (face swap) & 150 & 0,7933 & 1,0000\\
+    \texttt{text} (inpaint văn bản) & 935 & 0,2631 & 1,0000\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsubsection{Điểm theo thiết bị}
+\begin{table}[H]
+  \centering
+  \caption{Điểm tamper trung bình theo thiết bị trên FantasyID test, ngưỡng 0,55}
+  \label{tab:tamper-device}
+  \small
+  \begin{tabular}{@{}llcccc@{}}
+    \toprule
+    \textbf{Thiết bị} & \textbf{Nhãn} & \textbf{n} & \textbf{Tamper score TB} & \textbf{Model prob TB} & \textbf{\% dương tính}\\
+    \midrule
+    \texttt{huawei} & bona fide & 100 & 0,588 & 0,821 & 80,0\%\\
+    \texttt{huawei} & forged & 361 & 0,405 & 0,553 & 45,7\%\\
+    \texttt{iphone15} & bona fide & 100 & 0,444 & 0,627 & 56,0\%\\
+    \texttt{iphone15} & forged & 100 & 0,482 & 0,655 & 62,0\%\\
+    \texttt{scan} & bona fide & 100 & 0,374 & 0,527 & 43,0\%\\
+    \texttt{scan} & forged & 362 & 0,225 & 0,308 & 24,9\%\\
+    \texttt{iphone15pro} & forged & 262 & 0,173 & 0,242 & 18,3\%\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+Khoảng cách \textbf{giữa các thiết bị} lớn hơn khoảng cách \textbf{giữa hai lớp} --- bằng chứng định
+lượng cho hiện tượng shortcut theo thiết bị.
+
+\subsubsection{Ablation trọng số fusion}
+Với $\text{score}(w) = w\cdot\text{model} + (1-w)\cdot\text{signal}$, ngưỡng được chọn lại trên val
+cho từng $w$; kết quả test như sau:
+
+\begin{table}[H]
+  \centering
+  \caption{Ablation trọng số fusion trên FantasyID}
+  \label{tab:tamper-ablation}
+  \footnotesize
+  \resizebox{\textwidth}{!}{%
+  \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    \textbf{$w_{\text{model}}$} & \textbf{Val AUC} & \textbf{Val F1 @ ngưỡng} & \textbf{Test AUC} & \textbf{Test AP} & \textbf{Test F1 @0,55} & \textbf{FPR @ ngưỡng}\\
+    \midrule
+    0,0 (heuristic-only) & 0,9603 & 0,8861 @ 0,050 & 0,5172 & 0,8338 & 0,0000 & 0,1433\\
+    0,3 & 0,9111 & 0,8713 @ 0,310 & 0,3619 & 0,7624 & 0,0000 & 0,2800\\
+    0,5 & 0,8822 & 0,8247 @ 0,495 & 0,3521 & 0,7541 & 0,1081 & 0,3500\\
+    0,7 (triển khai) & 0,8619 & 0,8146 @ 0,565 & 0,3417 & 0,7430 & 0,4481 & 0,5967\\
+    1,0 (model-only) & 0,8112 & 0,8057 @ 0,815 & 0,3190 & 0,6989 & 0,5070 & 0,5933\\
+    \bottomrule
+  \end{tabular}}
+\end{table}
+
+\subsubsection{Diễn giải}
+\begin{itemize}
+  \item \textbf{Val sụp khi sang test:} nguyên nhân là domain shift và shortcut thiết bị. Train chỉ có
+        \texttt{face\_text} và 3 thiết bị; test là OOD với \texttt{digital\_3},
+        \texttt{facedancer} và \path{textdiffuserft_bfei}; bona fide test toàn bộ là
+        \texttt{iphone15} --- thiết bị không có trong train; cộng thêm tấn công văn bản khó nhất.
+  \item \textbf{AUC < 0,5} là hệ quả trực tiếp của đảo điểm theo thiết bị: trong từng thiết bị hai lớp,
+        bona fide có điểm trung bình cao hơn forged, nên xếp hạng toàn cục bị đảo.
+  \item \textbf{Heuristic học ``dấu vân tay thiết bị'':} AUC 0,9603 trên val nhưng về ngẫu nhiên
+        (0,5172) trên test OOD --- không nên dùng làm tín hiệu quyết định.
+  \item \textbf{Model chuyển miền tốt hơn:} AUC/AP cao hơn ở mọi $w<1$; nhưng tại ngưỡng triển khai
+        0,55, model-only cho F1 cao hơn (0,5070 so với 0,4481). Nếu buộc phải chọn một cấu hình vận hành,
+        $w=1{,}0$ + ngưỡng 0,55 tốt hơn; giữ fusion 0,7 chỉ để giữ khả năng giải thích.
+  \item \textbf{Heuristic chỉ nên là thông tin phụ (advisory)}, không tham gia chấm điểm quyết định ---
+        đúng với khuyến nghị chuyển tamper sang advisory.
+  \item \textbf{IoU = 0} do mask head \emph{không dự đoán} vùng nào, không phải do chất lượng định vị;
+        cần phân tích riêng head/regression loss trước khi kết luận.
+  \item \textbf{Không được auto-reject:} FPR test 0,5967 nghĩa là gần 60\% người thật bị từ chối nếu
+        dùng ngưỡng 0,55 làm quyết định cứng.
+\end{itemize}
+
+\subsection{Độ trễ và thông lượng toàn pipeline}
+\subsubsection{Độ trễ từng mô-đun}
+\begin{table}[H]
+  \centering
+  \caption{Độ trễ và thông lượng từng mô-đun trên 200 ảnh FantasyID test (đo một luồng)}
+  \label{tab:latency}
+  \footnotesize
+  \resizebox{\textwidth}{!}{%
+  \begin{tabular}{@{}lrrrrrl@{}}
+    \toprule
+    \textbf{Mô-đun} & \textbf{n} & \textbf{Mean (ms)} & \textbf{Median (ms)} & \textbf{P95 (ms)} & \textbf{Max (ms)} & \textbf{FPS (theo median)}\\
+    \midrule
+    I/O (đọc + RGB) & 400 & 18,96 & 12,85 & 51,43 & 76,13 & 77,82\\
+    Face detection (UltraFace) & 200 & 46,89 & 33,01 & 133,55 & 258,41 & 30,29\\
+    Landmark (MediaPipe) & 200 & 17,99 & 15,76 & 35,34 & 73,29 & 63,45\\
+    Embedding (ArcFace) & 110 & 22,95 & 6,77 & 67,18 & 130,25 & 147,71\\
+    Passive Liveness (MiniFASNetV2 + TTA) & 113 & 175,19 & 185,27 & 241,81 & 352,81 & 5,40\\
+    OCR (RapidOCR) & 200 & 2.069,50 & 2.329,84 & 3.381,39 & 4.329,14 & 0,43\\
+    QR (ảnh mẫu, lặp 20 lần) & 20 & 55,12 & 56,52 & 63,09 & 64,25 & 17,69\\
+    Tamper (TamperNet) & 1.385 & 269,95 & 252,35 & 460,97 & 2.263,03 & 3,96\\
+    \midrule
+    \textbf{Tổng tuần tự (ước tính)} & -- & -- & \textbf{2.892,40} & -- & -- & \textbf{0,35}\\
+    \bottomrule
+  \end{tabular}}
+\end{table}
+Ghi chú: FPS $= 1000 /$ median, đo trên một luồng, không batch; đây là thông lượng tham chiếu trên
+laptop (RTX 4060 Laptop + ONNX Runtime CPU cho UltraFace/ArcFace/RapidOCR), không phải cam kết SLA
+trên server. Tổng tuần tự 2.892,40 ms tương đương khoảng \textbf{2,89 giây/ảnh} và chưa gồm thời gian
+upload mạng.
+
+\subsubsection{Độ trễ bộ phân loại FAS trên crop}
+\begin{table}[H]
+  \centering
+  \caption{Độ trễ riêng bộ phân loại MiniFASNetV2 trên crop $256\times256$ (CASIA-FASD)}
+  \label{tab:fas-latency}
+  \small
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Cấu hình} & \textbf{n} & \textbf{Median (ms)} & \textbf{P95 (ms)} & \textbf{FPS}\\
+    \midrule
+    TTA bật & 2.660 & 16,96 & 17,59 & 58,96\\
+    TTA tắt & 2.660 & 8,48 & 8,84 & 117,92\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsubsection{Độ phủ phát hiện trên ảnh chân dung in trên thẻ}
+\begin{table}[H]
+  \centering
+  \caption{Độ phủ phát hiện khuôn mặt và OCR trên 200 ảnh FantasyID test}
+  \label{tab:coverage-detect}
+  \small
+  \begin{tabular}{@{}lccc@{}}
+    \toprule
+    \textbf{Chỉ số} & \textbf{Số lượng} & \textbf{Tỷ lệ}\\
+    \midrule
+    UltraFace phát hiện được box & 113/200 & 56,5\%\\
+    MediaPipe phát hiện đủ 5 landmark & 110/200 & 55,0\%\\
+    Không phát hiện được mặt ở độ phân giải gốc & 87/200 & 43,5\%\\
+    OCR thành công & 200/200 & 100,0\%\\
+    QR giải mã ảnh mẫu & 20/20 lần lặp & 100,0\%\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsubsection{Nhận xét về hiệu năng}
+\begin{itemize}
+  \item \textbf{OCR là điểm nghẽn chính:} RapidOCR \cite{rapidocr,du2020ppocr} chiếm khoảng \textbf{80,6\%} tổng thời gian tuần tự
+        (2.329,84 ms trên 2.892,40 ms). Hạ cạnh dài về khoảng 1.600 px trước khi OCR, crop vùng thẻ hoặc
+        chạy OCR song song với các mô-đun khác có thể đưa tổng xuống gần 1 giây.
+  \item \textbf{FAS:} 185,27 ms ở mức pipeline (có detect + TTA); trên crop $256\times256$ chỉ còn
+        17,0 ms (TTA) hoặc 8,5 ms (không TTA). Tắt TTA giảm khoảng 50\% độ trễ và không làm xấu EER cấp video.
+  \item \textbf{Tamper:} trung vị 252,35 ms, P95 460,97 ms, lớn nhất 2.263,03 ms --- có đuôi dài, cần
+        đặt timeout và không chặn luồng chính.
+  \item \textbf{Độ phủ detector thấp trên mặt in:} 43,5\% ảnh không phát hiện được mặt ở độ phân giải gốc.
+        Đây là lỗ hổng thật của nhánh ``mặt trên thẻ''; cần tiling trước khi detect (hàm
+        \path{_tile_images} đã có nhưng chỉ dùng trong fallback của \path{_aligned_embedding}).
+\end{itemize}
+
+% =====================================================================
+\section{Đánh giá độ phủ của bộ kiểm thử}
+% =====================================================================
+\begin{table}[H]
+  \centering
+  \caption{Độ phủ kiểm thử theo yêu cầu}
+  \label{tab:coverage}
+  \small
+  \begin{tabular}{@{}p{5.2cm}p{4.3cm}p{4.9cm}@{}}
+    \toprule
+    \textbf{Yêu cầu kiểm thử} & \textbf{Kiểm thử hiện có} & \textbf{Mức độ phủ}\\
+    \midrule
+    OCR số CCCD / dự phòng CMND & \path{test_ocr_service.py} & Một phần (chỉ logic trích xuất số)\\
+    Khuôn mặt: không mặt / nhiều mặt / so khớp & \path{test_face_service.py} & Một phần (logic và benchmark)\\
+    Passive liveness: real / spoof / replay & \path{test_liveness.py} + CASIA-FASD & Một phần (chưa phân loại riêng print/replay)\\
+    Active liveness: tư thế / frame tĩnh & \path{test_active_liveness.py} & Thấp (mới có không có frame và frame tĩnh)\\
+    Tamper: fusion / an toàn & \path{test_tamper.py} & Rất cao\\
+    QR: giải mã / đối chiếu & \path{test_qr_service.py} & Cao (có ảnh mẫu)\\
+    Quyết định RETRY / REJECTED / VERIFIED & \path{test_liveness_gate.py} & Cao\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% =====================================================================
+\section{Nhận xét và hạn chế}
+% =====================================================================
+\begin{itemize}
+  \item \textbf{Kiểm thử logic:} toàn bộ 44 test đạt, cho thấy phần logic quyết định và tiền xử lý hoạt động
+        ổn định; regression về khoảng đầu vào $[0,255]$ của MiniFASNetV2 đã được bảo vệ bằng test.
+  \item \textbf{Passive liveness:} EER đạt \num{0.0639} ở mức frame và \num{0.0333} ở mức video trên CASIA-FASD
+        (APCER mức video bằng 0). Tuy nhiên BPCER mức video là \num{0.10}, nghĩa là khoảng 10\% mẫu thật bị
+        từ chối; điều này được giảm nhẹ nhờ cơ chế \texttt{RETRY} cho phép người dùng chụp lại.
+  \item \textbf{So khớp khuôn mặt:} ArcFace đạt EER \num{0.0200} và accuracy \num{0.9830} trên tập test LFW
+        tại ngưỡng \num{0.30}, với FAR bằng 0.
+  \item \textbf{Phát hiện giả mạo giấy tờ:} kết quả trên FantasyID \textbf{chưa đạt yêu cầu}: AUC chỉ
+        \num{0.3417} (thấp hơn mức ngẫu nhiên 0,5), F1 \num{0.4481}, FPR \num{0.5967} và FNR \num{0.6636}.
+        Điều này cho thấy mô hình hiện chưa phân biệt được giấy tờ thật và giả trên tập này, có thể do khác biệt
+        miền dữ liệu (domain shift) giữa dữ liệu huấn luyện và FantasyID. Do đó mô-đun này chỉ nên đóng vai trò
+        tín hiệu phụ trợ, không nên làm căn cứ duy nhất để từ chối giấy tờ. Việc engine chỉ dùng heuristic không
+        bao giờ tự trả về \texttt{TAMPERED} là phù hợp với thiết kế an toàn này.
+  \item \textbf{Độ trễ:} OCR (RapidOCR) chiếm khoảng \num{80.6}\% tổng thời gian tuần tự của pipeline
+        (trung vị \num{2329.84} ms trên tổng \num{2892.40} ms), là điểm nghẽn chính cần tối ưu. Độ trễ
+        được đo trên laptop (RTX 4060 Laptop + ONNX Runtime CPU), không đại diện cho server triển khai.
+  \item \textbf{CASIA-FASD:} gói crop là bản cắt lại không chính thức, split gốc không dùng được và đã
+        được gộp + khử trùng lặp; nhãn không tách print/replay; ảnh $256\times256$ đã căn mặt nên bỏ qua
+        bước detect. Vì vậy kết quả cao (video EER 3,33\%) có thể lạc quan so với ảnh in CCCD thật.
+  \item \textbf{LFW:} ảnh đã căn, frontal, không có glare/perspective/print; checkpoint ArcFace tiền
+        huấn luyện có thể đã thấy LFW (không kiểm chứng được) nên FAR/FRR là \textbf{cận trên lạc quan}.
+        Đây là đánh giá recognition trên cặp chuẩn, không phải end-to-end selfie--CCCD.
+  \item \textbf{FantasyID:} domain shift và shortcut thiết bị là nguyên nhân chính làm AUC $<0{,}5$;
+        bona fide test toàn bộ là \texttt{iphone15} --- thiết bị không có trong train. Kết quả không suy
+        rộng trực tiếp cho CCCD Việt Nam; mask head không dự đoán vùng nên IoU $=0$ chưa phản ánh chất
+        lượng định vị.
+  \item \textbf{Độ bền FAS:} dùng suy giảm tổng hợp (JPEG, Gaussian blur, hạ--nâng phân giải, giảm sáng)
+        trên crop đã nén, không phải ảnh chụp điện thoại thật; nhóm HR chỉ có 30 video thật nên khoảng
+        tin cậy rộng.
+  \item \textbf{Giới hạn khái quát hóa:} các benchmark dùng dữ liệu công khai nên chưa thể suy diễn trực tiếp
+        cho CCCD/CMND Việt Nam thật; chưa có thí nghiệm E2E và chưa có người thật tham gia.
+\end{itemize}
+
+% =====================================================================
+\section{Kết luận và hướng phát triển}
+% =====================================================================
+\subsection{Kết luận}
+Thành phần AI của hệ thống eKYC đã được kiểm chứng bằng 44 test tự động, tất cả đều đạt. Bộ test bao phủ
+các quy tắc quyết định và tiền xử lý cốt lõi. Các đánh giá định lượng trên ba bộ dữ liệu công khai
+(CASIA-FASD \cite{zhang2012casia}, LFW \cite{huang2008lfw}, FantasyID \cite{korshunov2025fantasyid})
+cho kết quả tốt đối với passive liveness và so khớp khuôn mặt; kết quả trên FantasyID cho thấy mô-đun
+phát hiện giả mạo giấy tờ còn hạn chế. Báo cáo cũng đã ghi rõ nguồn gốc, quy mô, giấy phép, giao thức
+chia tập và kết quả độ trễ/thông lượng (ms, FPS) của từng bộ dữ liệu. Những kết quả này là cơ sở cho
+chương cài đặt và kiểm thử của khóa luận, đồng thời định hướng cho các thực nghiệm toàn trình (E2E) và
+thực nghiệm trên dữ liệu thật trong tương lai.
+
+\subsection{Hướng phát triển}\label{sec:future}
+\begin{enumerate}[label=\arabic*.]
+  \item Xây dựng kiểm thử E2E cho toàn bộ luồng FE $\rightarrow$ BE $\rightarrow$ AI $\rightarrow$ Cơ sở dữ liệu.
+  \item Bổ sung kiểm thử cho backend (NestJS) và frontend (Next.js).
+  \item Bổ sung kiểm thử OCR theo các biến thể chất lượng ảnh (mờ, thiếu/thừa sáng, nghiêng).
+  \item Bổ sung kiểm thử tư thế cho active liveness (quay trái/phải).
+  \item Thu thập bộ dữ liệu CCCD Việt Nam thật (có sự đồng ý và ẩn danh phù hợp) để benchmark nội miền,
+        đồng thời cải thiện mô-đun TamperNet.
+\end{enumerate}
+
+\newpage
+% =====================================================================
+\renewcommand{\refname}{Tài liệu tham khảo}
+\begin{thebibliography}{99}
+\sloppy
+
+\bibitem{zhang2012casia}
+Z. Zhang, J. Yan, S. Liu, Z. Lei, D. Yi, and S. Z. Li,
+``A face antispoofing database with diverse attacks,''
+in \emph{Proc. IAPR International Conference on Biometrics (ICB)}, 2012, pp. 26--31.
+
+\bibitem{huang2008lfw}
+G. B. Huang, M. Mattar, T. Berg, and E. Learned-Miller,
+``Labeled Faces in the Wild: A database for studying face recognition in unconstrained environments,''
+in \emph{Workshop on Faces in Real-Life Images, ECCV}, 2008.
+
+\bibitem{korshunov2025fantasyid}
+P. Korshunov, A. Mohammadi, A. Vidit, C. Ecabert, and S. Marcel,
+``FantasyID: A dataset for detecting digital manipulations of ID-documents,''
+in \emph{Proc. IEEE International Joint Conference on Biometrics (IJCB)}, 2025.
+Dataset v1: \url{https://zenodo.org/records/17063366}.
+
+\bibitem{deng2019arcface}
+J. Deng, J. Guo, N. Xue, and S. Zafeiriou,
+``ArcFace: Additive angular margin loss for deep face recognition,''
+in \emph{Proc. IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, 2019, pp. 4690--4699.
+
+\bibitem{zhang2020celeba}
+Y. Zhang, Z. Yin, Y. Li, G. Yin, J. Yan, J. Ma, and Z. Liu,
+``CelebA-Spoof: Large-scale face anti-spoofing dataset with rich annotations,''
+in \emph{Proc. European Conference on Computer Vision (ECCV)}, 2020.
+
+\bibitem{minivision2020silent}
+minivision-ai,
+``Silent-Face-Anti-Spoofing: MiniFASNetV2 implementation and pretrained weights,''
+GitHub repository, 2020.
+\url{https://github.com/minivision-ai/Silent-Face-Anti-Spoofing}.
+
+\bibitem{linzaer2019ultraface}
+Linzaer,
+``Ultra-Light-Fast-Generic-Face-Detector-1MB (UltraFace),''
+GitHub repository, 2019.
+\url{https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB}.
+
+\bibitem{lugaresi2019mediapipe}
+C. Lugaresi, J. Tang, H. Nash, C. McClanahan, E. Uboweja, M. Hays, F. Zhang, C.-L. Chang, M. G. Yong,
+J. Lee, W.-T. Chang, W. Hua, M. Georg, and M. Grundmann,
+``MediaPipe: A framework for building perception pipelines,''
+\emph{arXiv preprint arXiv:1906.08172}, 2019.
+
+\bibitem{du2020ppocr}
+Y. Du, C. Li, R. Guo, X. Yin, W. Liu, J. Zhou, Y. Bai, Z. Yu, Y. Yang, Q. Dang, and H. Wang,
+``PP-OCR: A practical ultra lightweight OCR system,''
+\emph{arXiv preprint arXiv:2009.09941}, 2020.
+
+\bibitem{rapidocr}
+RapidAI,
+``RapidOCR: A cross-platform OCR toolkit based on ONNX Runtime,''
+GitHub repository.
+\url{https://github.com/RapidAI/RapidOCR}.
+
+\bibitem{iso30107}
+ISO/IEC 30107-3:2017,
+\emph{Information technology --- Biometric presentation attack detection --- Part 3: Testing and reporting},
+International Organization for Standardization, 2017.
+
+\end{thebibliography}
+
+% =====================================================================
+\appendix
+\section{Danh sách đầy đủ các test case (pytest node ID)}
+% =====================================================================
+{\footnotesize
+\begin{longtable}{@{}p{3.6cm}p{6.8cm}p{4.2cm}@{}}
+  \caption{Danh sách 44 test case}\label{tab:appendix}\\
+  \toprule
+  \textbf{Tệp} & \textbf{Tên test} & \textbf{Mô tả}\\
+  \midrule
+  \endfirsthead
+  \toprule
+  \textbf{Tệp} & \textbf{Tên test} & \textbf{Mô tả}\\
+  \midrule
+  \endhead
+  \bottomrule
+  \endfoot
+
+  \path{test_active_liveness.py} & \path{test_analyze_no_frames} & Danh sách frame rỗng\\
+   & \path{test_is_frozen_true_for_identical_frames} & Phát hiện frame tĩnh\\
+   & \path{test_is_frozen_false_for_changing_frames} & Frame thay đổi không bị coi là tĩnh\\
+   & \path{test_is_frozen_false_for_single_frame} & Frame đơn lẻ không bị coi là tĩnh\\
+  \midrule
+  \path{test_face_service.py} & \path{test_detector_uses_model_input_size} & Kích thước đầu vào detector\\
+   & \path{test_preprocess_shape} & Kích thước tensor đầu vào\\
+   & \path{test_postprocess_decodes_and_suppresses} & Giải mã box và NMS\\
+   & \path{test_nms_keeps_distinct_boxes} & Giữ các box tách biệt\\
+   & \path{test_detect_face_boxes_runs} & Chạy detector thực tế\\
+   & \path{test_aligned_embedding_falls_back_to_detected_box} & Dự phòng khi thiếu landmark\\
+  \midrule
+  \path{test_liveness.py} & \path{test_get_new_box_stays_within_image} & Box mở rộng nằm trong ảnh\\
+   & \path{test_crop_face_returns_target_size} & Kích thước ảnh crop\\
+   & \path{test_predict_uses_0_255_input_range} & Regression đầu vào MiniFASNet\\
+   & \path{test_predict_returns_three_class_probabilities} & Ba xác suất, tổng bằng 1\\
+  \midrule
+  \path{test_liveness_gate.py} & \path{test_low_blur_returns_retake_without_calling_fas} & Blur gate, không gọi FAS\\
+   & \path{test_blurry_frame_without_detectable_face_returns_retake} & Ảnh mờ và không có mặt\\
+   & \path{test_quality_gate_can_be_disabled} & Tắt blur gate\\
+   & \path{test_sharp_image_reaches_fas} & Ảnh rõ được đưa vào FAS\\
+   & \path{test_decide_status_retry_versus_reject} & Quyết định RETRY/REJECTED\\
+   & \path{test_verify_returns_retry_for_blurry_selfie} & Luồng verify với selfie mờ\\
+  \midrule
+  \path{test_ocr_service.py} & \path{test_prefers_twelve_digit_cccd} & Nhận số CCCD 12 chữ số\\
+   & \path{test_prefers_twelve_over_nine} & Ưu tiên CCCD hơn CMND\\
+   & \path{test_falls_back_to_nine_digit_cmnd} & Dự phòng sang CMND\\
+   & \path{test_returns_none_when_absent} & Không có số thì trả null\\
+  \midrule
+  \path{test_qr_service.py} & \path{test_parse_with_legacy_id} & Parse QR có số CMND cũ\\
+   & \path{test_parse_without_legacy_id} & Parse QR không có số CMND cũ\\
+   & \path{test_compare_match_ignores_accents_and_separators} & MATCH, bỏ qua dấu và ký tự phân tách\\
+   & \path{test_compare_mismatch_document_number} & MISMATCH số giấy tờ\\
+   & \path{test_compare_partial_when_only_name_differs} & PARTIAL khi chỉ khác họ tên\\
+   & \path{test_compare_not_found_when_no_qr} & NOT\_FOUND khi không có QR\\
+   & \path{test_compare_not_found_when_no_ocr} & NOT\_FOUND khi không có OCR\\
+   & \path{test_decode_fixture_image} & Giải mã ảnh mẫu\\
+  \midrule
+  \path{test_tamper.py} & \path{test_tamper_net_shapes} & Kích thước đầu ra TamperNet\\
+   & \path{test_tamper_net_requires_size_divisible_by_block} & Kích thước chia hết cho block\\
+   & \path{test_tamper_loss_is_finite} & Loss hữu hạn\\
+   & \path{test_letterbox_roundtrip_box} & Letterbox/unletterbox\\
+   & \path{test_mask_to_regions_finds_component} & Trích vùng từ mask\\
+   & \path{test_blockiness_detects_jpeg_grid} & Phát hiện lưới JPEG\\
+   & \path{test_low_hf_fraction_high_on_flat_image} & Tỷ lệ tần số cao trên ảnh phẳng\\
+   & \path{test_forensic_signals_with_and_without_photo_box} & Tín hiệu pháp y có/không box ảnh\\
+   & \path{test_signal_score_renormalises_weights} & Chuẩn hóa lại trọng số\\
+   & \path{test_heuristic_engine_never_rejects_alone} & Heuristic không tự từ chối\\
+   & \path{test_analyze_without_model_returns_contract} & Hợp đồng khi chưa nạp model\\
+   & \path{test_analyze_disabled} & Chế độ DISABLED\\
+\end{longtable}}
+
+\end{document}

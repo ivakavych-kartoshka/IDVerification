@@ -1,0 +1,19 @@
+# =====================================================================
+# Cấu hình latexmk cho báo cáo kiểm thử AI.
+# Báo cáo dùng fontspec + babel tiếng Việt nên BẮT BUỘC biên dịch bằng
+# XeLaTeX (hoặc LuaLaTeX), KHÔNG dùng pdfLaTeX.
+#
+# Dùng:
+#   cd ai/reports
+#   latexmk BAO_CAO_KIEM_THU.tex
+#   latexmk -c        # xóa file tạm
+# =====================================================================
+
+$pdf_mode = 5;   # 5 = dùng xelatex
+$xelatex = 'xelatex -synctex=1 -interaction=nonstopmode -file-line-error %O %S';
+
+# Tự chạy lại đủ số lần để cập nhật tham chiếu, mục lục, bibliography
+$max_repeat = 5;
+
+# Dọn thêm các file đặc thù
+$clean_ext = 'synctex.gz fdb_latexmk fls run.xml';
