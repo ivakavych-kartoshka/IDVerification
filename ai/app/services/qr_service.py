@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import io
 import re
 import unicodedata
+from datetime import date, datetime
 
 import cv2
 import numpy as np
@@ -171,6 +172,81 @@ class QRService:
         if len(texts) > 1:
             fields["native_place"] = texts[1]
         return fields
+
+    # ---------------------------------------------------------- age helpers
+    @staticmethod
+    def _parse_dob(value: Any) -> Optional[date]:
+        # Reuse the same tolerant parser as VerifyService by duplicating logic.
+        if value is None:
+            return None
+        if isinstance(value, date) and not isinstance(value, datetime):
+            return value
+        if isinstance(value, datetime):
+            return value.date()
+        text = str(value).strip()
+        if not text:
+            return None
+        candidates = [text, re.sub(r"\D", "", text)]
+        formats = ("%d%m%Y", "%Y%m%d", "%d/%m/%Y", "%d-%m-%Y", "%d.%m.%Y", "%Y-%m-%d", "%Y/%m/%d", "%m/%d/%Y")
+        for fmt in formats:
+            for cand in candidates:
+                try:
+                    return datetime.strptime(cand, fmt).date()
+                except ValueError:
+                    continue
+        digits = re.sub(r"\D", "", text)
+        if len(digits) >= 8:
+            for fmt in ("%d%m%Y", "%Y%m%d"):
+                try:
+                    return datetime.strptime(digits[:8], fmt).date()
+                except ValueError:
+                    continue
+        return None
+
+    @staticmethod
+    def age_from_dob(dob: Any, ref_date: Optional[date] = None, min_age: int = 18) -> Optional[int]:
+        birth = QRService._parse_dob(dob)
+        if birth is None:
+            return None
+        ref = ref_date or date.today()
+        if birth > ref:
+            return None
+        years = ref.year - birth.year
+        if (ref.month, ref.day) < (birth.month, birth.day):
+            years -= 1
+        return years
+
+    @staticmethod
+    def is_underage(dob_or_fields: Any, min_age: int = 18, ref_date: Optional[date] = None) -> bool:
+        dob = dob_or_fields
+        if isinstance(dob_or_fields, dict):
+            dob = (
+                dob_or_fields.get("dob")
+                or dob_or_fields.get("date_of_birth")
+                or dob_or_fields.get("dateOfBirth")
+                or dob_or_fields.get("birth_date")
+            )
+        age = QRService.age_from_dob(dob, ref_date)
+        return bool(age is not None and age < min_age)
+
+    @staticmethod
+    def is_under_18(dob_or_fields: Any, ref_date: Optional[date] = None) -> bool:
+        return QRService.is_underage(dob_or_fields, 18, ref_date)
+
+    @staticmethod
+    def check_age(dob_or_fields: Any, min_age: int = 18, ref_date: Optional[date] = None) -> Tuple[bool, Optional[str]]:
+        dob = dob_or_fields
+        if isinstance(dob_or_fields, dict):
+            dob = (
+                dob_or_fields.get("dob")
+                or dob_or_fields.get("date_of_birth")
+                or dob_or_fields.get("dateOfBirth")
+                or dob_or_fields.get("birth_date")
+            )
+        age = QRService.age_from_dob(dob, ref_date)
+        if age is not None and age < min_age:
+            return True, f"Under {min_age} years old (age {age})"
+        return False, None
 
     # ---------------------------------------------------------- comparison
     def compare(self, qr_fields: Optional[Dict[str, Any]], ocr_text: str) -> Dict[str, Any]:

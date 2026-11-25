@@ -189,6 +189,7 @@ not be able to reject a genuine citizen's card on its own.
 | Variable | Default | Description |
 | --- | --- | --- |
 | `AI_TAMPER_ENABLED` | `true` | Run the tamper check inside `/verify/`. |
+| `AI_TAMPER_ADVISORY` | `true` | Keep the `TAMPERED` verdict as informational only; it will not reject a genuine card. Set to `false` to restore the hard block. |
 | `AI_TAMPER_MODEL` | `models/tamper_net.pth` | Checkpoint path; a `.onnx` file switches to the onnxruntime backend. |
 | `AI_TAMPER_THRESHOLD` | `0.55` | Score at/above which the verdict is `TAMPERED`. |
 | `AI_TAMPER_SUSPECT` | `0.35` | Score at/above which the verdict is `SUSPICIOUS`. |
@@ -205,8 +206,10 @@ until fitted on real card data - see calibration below.
 - `GET /tamper/healthz` - reports the active engine and whether the checkpoint
   loaded.
 
-Inside `/verify/` the result appears as `tamper`, and a `TAMPERED` verdict adds
-`tamper_reject` to the decision with a rejection reason.
+Inside `/verify/` the result appears as `tamper`. Because the tamper FPR on real
+cards is still high (see `reports/PAPER_EVIDENCE.vi.md`), the verdict is
+**advisory by default**: a `TAMPERED` status is reported but does not reject.
+Set `AI_TAMPER_ADVISORY=false` to make it block again.
 
 ### Preparing FantasyID
 

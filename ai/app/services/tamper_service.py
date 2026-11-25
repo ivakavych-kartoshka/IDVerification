@@ -28,6 +28,7 @@ Chuẩn hoá input model: RGB float32 [0, 1], letterbox về ``INPUT_SIZE`` (256
 Env (đọc lúc khởi tạo service)::
 
     AI_TAMPER_ENABLED      true    bật/tắt module
+    AI_TAMPER_ADVISORY     true    chỉ ghi nhận TAMPERED, không chặn (/verify/)
     AI_TAMPER_MODEL        models/tamper_net.pth   (.pth hoặc .onnx)
     AI_TAMPER_THRESHOLD    0.55    >= đây -> TAMPERED (chỉ khi model loaded)
     AI_TAMPER_SUSPECT      0.35    >= đây -> SUSPICIOUS

@@ -360,7 +360,7 @@ VERIFIED  khi: face_match == MATCH
               AND không có nhiều khuôn mặt trong selfie
 
 REJECTED  khi: bất kỳ điều kiện trên sai
-               (face mismatch/weak, liveness fail, no face, multiple faces, QR mismatch)
+               (face mismatch/weak, liveness fail, no face, multiple faces, QR mismatch, chưa đủ 18 tuổi)
 
 PROCESSING: trạng thái trung gian mặc định
 ```

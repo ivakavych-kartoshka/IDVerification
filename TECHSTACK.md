@@ -325,6 +325,7 @@ chỉ tối đa `SUSPICIOUS` — reject cứng phải có model neural đã load
 | Env | Mặc định |
 | --- | --- |
 | `AI_TAMPER_ENABLED` | `true` |
+| `AI_TAMPER_ADVISORY` | `true` (kết quả `TAMPERED` chỉ để tham khảo, không chặn; đặt `false` để chặn lại) |
 | `AI_TAMPER_MODEL` | `models/tamper_net.pth` (đổi sang `.onnx` → chuyển backend onnxruntime) |
 | `AI_TAMPER_THRESHOLD` | `0.55` |
 | `AI_TAMPER_SUSPECT` | `0.35` |

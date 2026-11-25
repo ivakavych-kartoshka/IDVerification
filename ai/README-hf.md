@@ -37,6 +37,7 @@ Cấu hình qua **Settings → Variables and secrets** của Space. Các biến 
 | Biến | Mặc định | Mô tả |
 | --- | --- | --- |
 | `AI_TAMPER_ENABLED` | `true` | Bật kiểm tra giả mạo |
+| `AI_TAMPER_ADVISORY` | `true` | `TAMPERED` chỉ để tham khảo, không chặn xác thực (`false` = chặn lại) |
 | `AI_TAMPER_MODEL` | `models/tamper_net.pth` | Checkpoint (`.pth` torch hoặc `.onnx`) |
 | `AI_TAMPER_THRESHOLD` | `0.55` | Ngưỡng quyết định `TAMPERED` |
 | `AI_TAMPER_SUSPECT` | `0.35` | Ngưỡng `SUSPICIOUS` |
